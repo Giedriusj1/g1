@@ -4,8 +4,6 @@ use crate::lex;
 pub(crate) enum Atom {
     Nil,
     True,
-    Plus,
-    Minus,
     Digit(i32),
     String(String)
 }
@@ -32,8 +30,6 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                 current_sexp = sexp_stack.pop().unwrap();
                 current_sexp.push(Sexp::List(finished_sexp));
             }
-            lex::Token::Plus => current_sexp.push(Sexp::Atom(Atom::Plus)),
-            lex::Token::Minus => current_sexp.push(Sexp::Atom(Atom::Minus)),
             lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Digit(d))),
 	    lex::Token::String(s) => current_sexp.push(Sexp::Atom(Atom::String(s)))
         }

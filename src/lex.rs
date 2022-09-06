@@ -2,8 +2,6 @@
 pub(crate) enum Token {
     LeftParen,
     RightParen,
-    Plus,
-    Minus,
     Digit(i32),
     String(String),
 }
@@ -92,7 +90,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                     }
                 }
 
-                if char.is_alphabetic() {
+                if char.is_alphabetic() || char == '+'  {
                     letters.push(char);
                 } else {
                     count = count - 1;
@@ -115,8 +113,6 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
     let match_functions: Vec<fn(chars: std::str::Chars) -> Option<(Token, usize)>> = vec![
         move |x| extract_single_char(x, '(', Token::LeftParen),
         move |x| extract_single_char(x, ')', Token::RightParen),
-        move |x| extract_single_char(x, '+', Token::Plus),
-        move |x| extract_single_char(x, '-', Token::Minus),
         extract_number,
         extract_string,
     ];
