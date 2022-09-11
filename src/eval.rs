@@ -3,14 +3,37 @@ use crate::sexp;
 use std::collections::HashMap;
 
 pub(crate) fn eval_sexp(sexp: sexp::Sexp) -> sexp::Atom {
-    let mut map: HashMap<String, sexp::Sexp> = HashMap::new();
+    let mut global_map: HashMap<String, sexp::Sexp> = HashMap::new();
 
-    return eval_sexp_internal(sexp, &mut map);
+    let mut fn_map: Vec<HashMap<String, sexp::Sexp>> = vec![];
+
+    return eval_sexp_internal(sexp, &mut global_map, &mut fn_map);
+}
+
+fn get_from_fn_map_or_global(
+    var_name: String,
+    global_map: &mut HashMap<String, sexp::Sexp>,
+    fn_map: &mut Vec<HashMap<String, sexp::Sexp>>,
+) -> Option<sexp::Sexp> {
+    // We'll try to find the var in a function var stack first
+
+    for var in fn_map.iter().rev() {
+        match var.get(&var_name) {
+            Some(sexp) => return Some(sexp.to_owned()),
+            None => (),
+        }
+    }
+
+    match global_map.get(&var_name) {
+        Some(sexp) => return Some(sexp.to_owned()),
+        None => None,
+    }
 }
 
 pub(crate) fn eval_sexp_internal(
     sexp: sexp::Sexp,
-    map: &mut HashMap<String, sexp::Sexp>,
+    global_map: &mut HashMap<String, sexp::Sexp>,
+    fn_map: &mut Vec<HashMap<String, sexp::Sexp>>,
 ) -> sexp::Atom {
     // TODO: we probably want sexp returned here
     match sexp {
@@ -23,14 +46,28 @@ pub(crate) fn eval_sexp_internal(
                     return sexp::Atom::True;
                 }
 
-                if map.contains_key(&s) {
-                    match map.get(&s).unwrap().to_owned() {
+                // if fn_map.len() > 0 {
+                //     // We are inside a function, so any variables defines in the
+                //     // function take precedence over global ones.
+                //     let t = &fn_map[fn_map.len() -1];
+                // }
+
+                match get_from_fn_map_or_global(s.clone(), global_map, fn_map) {
+                    Some(var) => match var {
                         sexp::Sexp::Atom(a) => a,
                         sexp::Sexp::List(_) => panic!("todo here pls"),
-                    }
-                } else {
-                    panic!("symbol {} is not defined", s);
+                    },
+                    None => panic!("symbol {} is not defined", s),
                 }
+
+                // if global_map.contains_key(&s) {
+                //     match global_map.get(&s).unwrap().to_owned() {
+                //         sexp::Sexp::Atom(a) => a,
+                //         sexp::Sexp::List(_) => panic!("todo here pls"),
+                //     }
+                // } else {
+                //     panic!("symbol {} is not defined", s);
+                // }
             }
             _ => a,
         },
@@ -44,51 +81,73 @@ pub(crate) fn eval_sexp_internal(
                             if s == "msg" {
                                 eprintln!(
                                     "msg: {:#?}",
-                                    eval_sexp_internal(l.get(1).unwrap().clone(), map)
+                                    eval_sexp_internal(
+                                        l.get(1).unwrap().clone(),
+                                        global_map,
+                                        fn_map
+                                    )
                                 );
-                                sexp::Atom::True
+                                return sexp::Atom::True;
                             } else if s == "-" {
                                 // We are being asked to subtract two numbers
-                                let first = match eval_sexp_internal(l.get(1).unwrap().clone(), map)
-                                {
+                                let first = match eval_sexp_internal(
+                                    l.get(1).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
                                     sexp::Atom::Digit(d) => d,
                                     _ => panic!(),
                                 };
 
-                                let second =
-                                    match eval_sexp_internal(l.get(2).unwrap().clone(), map) {
-                                        sexp::Atom::Digit(d) => d,
-                                        _ => panic!(),
-                                    };
+                                let second = match eval_sexp_internal(
+                                    l.get(2).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
+                                    sexp::Atom::Digit(d) => d,
+                                    _ => panic!(),
+                                };
 
                                 return sexp::Atom::Digit(first - second);
                             } else if s == "+" {
-                                let first = match eval_sexp_internal(l.get(1).unwrap().clone(), map)
-                                {
+                                let first = match eval_sexp_internal(
+                                    l.get(1).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
                                     sexp::Atom::Digit(d) => d,
                                     _ => panic!(),
                                 };
 
-                                let second =
-                                    match eval_sexp_internal(l.get(2).unwrap().clone(), map) {
-                                        sexp::Atom::Digit(d) => d,
-                                        _ => panic!(),
-                                    };
+                                let second = match eval_sexp_internal(
+                                    l.get(2).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
+                                    sexp::Atom::Digit(d) => d,
+                                    _ => panic!(),
+                                };
 
-                                sexp::Atom::Digit(first + second)
+                                return sexp::Atom::Digit(first + second);
                             } else if s == "<" {
                                 // We are being asked to compare two numbers
-                                let first = match eval_sexp_internal(l.get(1).unwrap().clone(), map)
-                                {
+                                let first = match eval_sexp_internal(
+                                    l.get(1).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
                                     sexp::Atom::Digit(d) => d,
                                     _ => panic!(),
                                 };
 
-                                let second =
-                                    match eval_sexp_internal(l.get(2).unwrap().clone(), map) {
-                                        sexp::Atom::Digit(d) => d,
-                                        _ => panic!(),
-                                    };
+                                let second = match eval_sexp_internal(
+                                    l.get(2).unwrap().clone(),
+                                    global_map,
+                                    fn_map,
+                                ) {
+                                    sexp::Atom::Digit(d) => d,
+                                    _ => panic!(),
+                                };
 
                                 if first < second {
                                     return sexp::Atom::True;
@@ -102,9 +161,17 @@ pub(crate) fn eval_sexp_internal(
                                     // skip the first one, since it'll be progn
                                     if pos != 0 {
                                         if pos + 1 == l.len() {
-                                            return eval_sexp_internal(statement.clone(), map);
+                                            return eval_sexp_internal(
+                                                statement.clone(),
+                                                global_map,
+                                                fn_map,
+                                            );
                                         } else {
-                                            eval_sexp_internal(statement.clone(), map);
+                                            eval_sexp_internal(
+                                                statement.clone(),
+                                                global_map,
+                                                fn_map,
+                                            );
                                         }
                                     }
                                 }
@@ -112,9 +179,9 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "setq" {
                                 match l.get(1).unwrap().clone() {
                                     sexp::Sexp::Atom(sexp::Atom::String(s)) => {
-                                        map.insert(s, l.get(2).unwrap().clone());
+                                        global_map.insert(s, l.get(2).unwrap().clone());
 
-                                        sexp::Atom::Nil
+                                        return sexp::Atom::Nil;
                                     }
                                     _ => {
                                         panic!("a");
@@ -130,73 +197,99 @@ pub(crate) fn eval_sexp_internal(
                                 };
 
                                 eprintln!("defun {:#?}", l);
-                                map.insert(defun_name.to_owned(), sexp::Sexp::List(l));
+                                global_map.insert(defun_name.to_owned(), sexp::Sexp::List(l));
 
-                                sexp::Atom::Nil
+                                return sexp::Atom::Nil;
                             } else if s == "if" {
                                 println!("l.get(1).unwrap() {:#?}", l.get(1).unwrap());
 
                                 // eval the conditional statement:
-                                let a = eval_sexp_internal(l.get(1).unwrap().to_owned(), map);
+                                let a = eval_sexp_internal(
+                                    l.get(1).unwrap().to_owned(),
+                                    global_map,
+                                    fn_map,
+                                );
 
                                 match a {
                                     sexp::Atom::Nil => {
                                         return eval_sexp_internal(
                                             l.get(3).unwrap().to_owned(),
-                                            map,
+                                            global_map,
+                                            fn_map,
                                         );
                                     }
                                     _ => {
                                         return eval_sexp_internal(
                                             l.get(2).unwrap().to_owned(),
-                                            map,
+                                            global_map,
+                                            fn_map,
                                         );
                                     }
                                 }
-                            } else if map.contains_key(s) {
-                                match map.get(s).unwrap().to_owned() {
-                                    sexp::Sexp::Atom(a) => a,
+                            }
 
-                                    sexp::Sexp::List(ourfn) => {
-                                        let ourfnparams = match ourfn.get(2).unwrap() {
-                                            sexp::Sexp::List(l) => l,
-                                            _ => panic!("function params should be a list"),
-                                        };
+                            match get_from_fn_map_or_global(s.clone(), global_map, fn_map) {
+                                Some(var) => {
+                                    match var {
+                                        sexp::Sexp::Atom(a) => a,
 
-                                        // Map variable names to values passed into the function
-                                        for (index, var) in ourfnparams.iter().enumerate() {
-                                            // println!("index {:#?}, var: {:#?}", index, var);
-
-                                            let var_string = match var {
-                                                sexp::Sexp::Atom(a) => match a {
-                                                    sexp::Atom::String(s) => s,
-                                                    _ => panic!(""),
-                                                },
-                                                _ => panic!(""),
+                                        sexp::Sexp::List(ourfn) => {
+                                            let ourfnparams = match ourfn.get(2).unwrap() {
+                                                sexp::Sexp::List(l) => l,
+                                                _ => panic!("function params should be a list"),
                                             };
 
-                                            let v = l.get(index + 1).unwrap().clone();
+                                            let mut current_function_param_map: HashMap<
+                                                String,
+                                                sexp::Sexp,
+                                            > = HashMap::new();
+                                            // Map variable names to values passed into the function
+                                            for (index, var) in ourfnparams.iter().enumerate() {
+                                                // println!("index {:#?}, var: {:#?}", index, var);
 
-                                            let var_eval = eval_sexp_internal(v, map);
+                                                let var_string = match var {
+                                                    sexp::Sexp::Atom(a) => match a {
+                                                        sexp::Atom::String(s) => s,
+                                                        _ => panic!(""),
+                                                    },
+                                                    _ => panic!(""),
+                                                };
 
-                                            map.insert(
-                                                var_string.to_owned(),
-                                                sexp::Sexp::Atom(var_eval),
+                                                let v = l.get(index + 1).unwrap().clone();
+
+                                                let var_eval =
+                                                    eval_sexp_internal(v, global_map, fn_map);
+
+                                                current_function_param_map.insert(
+                                                    var_string.to_owned(),
+                                                    sexp::Sexp::Atom(var_eval),
+                                                );
+                                            }
+
+                                            fn_map.push(current_function_param_map);
+
+                                            let ret = eval_sexp_internal(
+                                                ourfn.get(3).unwrap().clone(),
+                                                global_map,
+                                                fn_map,
                                             );
-                                        }
 
-                                        eval_sexp_internal(ourfn.get(3).unwrap().clone(), map)
+                                            fn_map.pop();
+
+                                            ret
+                                        }
                                     }
                                 }
-                            } else {
-                                panic!("symbol {} unrecognized", s);
+                                None => panic!("symbol {} unrecognized", s),
                             }
                         }
                         sexp::Atom::Nil => sexp::Atom::Nil,
                         sexp::Atom::True => sexp::Atom::True,
                         sexp::Atom::Digit(_) => panic!(),
                     },
-                    sexp::Sexp::List(_) => return eval_sexp_internal(sexp::Sexp::List(l), map),
+                    sexp::Sexp::List(_) => {
+                        return eval_sexp_internal(sexp::Sexp::List(l), global_map, fn_map)
+                    }
                 } // match first list elem
             } // not empty list?
         } // is a list?

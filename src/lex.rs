@@ -82,7 +82,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
 
         match chars.next() {
             Some(char) => {
-                if char == ' ' {
+                if char == ' ' || char == '\t'  {
                     if letters.is_empty() {
                         continue;
                     } else {
@@ -90,7 +90,8 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                     }
                 }
 
-                if char.is_alphabetic() || char == '+'  {
+                if char.is_alphabetic() || char == '-' || char == '+' || char == '<' || char == '>' || char == '='
+                {
                     letters.push(char);
                 } else {
                     count = count - 1;
@@ -130,6 +131,7 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
 
 pub(crate) fn extract_tokens(stra: String) -> Vec<Token> {
     let str = stra.replace("\n", " ");
+    let str = str.replace("\t", " ");
 
     let mut tokens: Vec<Token> = vec![];
 
