@@ -98,7 +98,7 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "*" {
                                 return sexp::Atom::Digit(
                                     eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                        + eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                        * eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 );
                             } else if s == "<" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
