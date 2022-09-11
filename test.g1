@@ -1,18 +1,22 @@
 ;;; -*- lexical-binding: t -*-
 (progn
 
-  (defun g(a)
-    (if (< a 1)
-	a
-      ;; (+ a (g (- a 1)))
-      (+ (g (- a 1)) a )
+  ;; (defun g(a)
+  ;;   (if (< a 1)
+  ;; 	a
+  ;;     (+ (g (- a 1)) a )
       
-      )
-    )
+  ;;     )
+  ;;   )
 
-  (g 3)
+  ;; (g 3)
+
+  (setq a 3)
+  
+  (== 3 a)
 
 
 
   
   )
+

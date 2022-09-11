@@ -5,7 +5,7 @@ pub(crate) enum Atom {
     Nil,
     True,
     Digit(i32),
-    String(String)
+    String(String),
 }
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                 current_sexp.push(Sexp::List(finished_sexp));
             }
             lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Digit(d))),
-	    lex::Token::String(s) => current_sexp.push(Sexp::Atom(Atom::String(s)))
+            lex::Token::String(s) => current_sexp.push(Sexp::Atom(Atom::String(s))),
         }
     }
 

@@ -5,7 +5,6 @@ mod sexp;
 use std::fs;
 
 fn main() {
-
     let text = fs::read_to_string("./test.g1")
         .unwrap()
         .lines()

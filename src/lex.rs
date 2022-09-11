@@ -6,11 +6,7 @@ pub(crate) enum Token {
     String(String),
 }
 
-fn extract_single_char(
-    mut chars: std::str::Chars,
-    c: char,
-    token_type: Token,
-) -> Option<(Token, usize)> {
+fn extract_single_char(mut chars: std::str::Chars, c: char, token_type: Token) -> Option<(Token, usize)> {
     let mut count = 0;
 
     loop {
@@ -82,7 +78,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
 
         match chars.next() {
             Some(char) => {
-                if char == ' ' || char == '\t'  {
+                if char == ' ' || char == '\t' {
                     if letters.is_empty() {
                         continue;
                     } else {
@@ -90,7 +86,13 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                     }
                 }
 
-                if char.is_alphabetic() || char == '-' || char == '+' || char == '<' || char == '>' || char == '='
+                if char.is_alphabetic()
+                    || char == '-'
+                    || char == '+'
+                    || char == '<'
+                    || char == '>'
+                    || char == '='
+                    || char == '*'
                 {
                     letters.push(char);
                 } else {
