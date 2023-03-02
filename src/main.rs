@@ -13,11 +13,11 @@ fn main() {
         .join("\n");
 
     let tokens: Vec<lex::Token> = lex::extract_tokens(text);
-    println!("tokens {:#?}", tokens);
+    println!("tokens {tokens:#?}");
 
     let sexp = sexp::create_sexp(tokens);
-    println!("sexp {:#?}", sexp);
+    println!("sexp {sexp:#?}");
 
     let eval = eval::eval_sexp(sexp);
-    println!("eval {:#?}", eval);
+    println!("eval {eval:#?}");
 }

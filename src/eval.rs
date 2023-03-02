@@ -7,7 +7,7 @@ pub(crate) fn eval_sexp(sexp: sexp::Sexp) -> sexp::Sexp {
 
     let mut fn_map: Vec<HashMap<String, sexp::Sexp>> = vec![];
 
-    return eval_sexp_internal(sexp, &mut global_map, &mut fn_map);
+    eval_sexp_internal(sexp, &mut global_map, &mut fn_map)
 }
 
 fn eval_sexp_expect_digit(
@@ -35,10 +35,7 @@ fn get_from_fn_map_or_global(
         }
     }
 
-    match g_map.get(&var_name) {
-        Some(sexp) => return Some(sexp.to_owned()),
-        None => None,
-    }
+    g_map.get(&var_name).map(|sexp| sexp.to_owned())
 }
 
 pub(crate) fn eval_sexp_internal(
@@ -61,13 +58,13 @@ pub(crate) fn eval_sexp_internal(
                         sexp::Sexp::Atom(a) => sexp::Sexp::Atom(a),
                         sexp::Sexp::List(_) => panic!("todo here pls"),
                     },
-                    None => panic!("symbol {} is not defined", s),
+                    None => panic!("symbol {s} is not defined"),
                 }
             }
             _ => sexp::Sexp::Atom(a),
         },
         sexp::Sexp::List(l) => {
-            if l.len() == 0 {
+            if l.is_empty() {
                 sexp::Sexp::Atom(sexp::Atom::Nil) // empty list, so treat it as nil
             } else {
                 match l.get(0).unwrap() {
@@ -148,7 +145,7 @@ pub(crate) fn eval_sexp_internal(
                                     sexp::Sexp::List(_) => panic!(),
                                 };
 
-                                eprintln!("defun {:#?}", l);
+                                eprintln!("defun {l:#?}");
                                 g_map.insert(defun_name.to_owned(), sexp::Sexp::List(l));
 
                                 return sexp::Sexp::Atom(sexp::Atom::Nil);
@@ -207,14 +204,14 @@ pub(crate) fn eval_sexp_internal(
                                         }
                                     }
                                 }
-                                None => panic!("symbol {} unrecognized", s),
+                                None => panic!("symbol {s} unrecognized"),
                             }
                         }
                         sexp::Atom::Nil => sexp::Sexp::Atom(sexp::Atom::Nil),
                         sexp::Atom::True => sexp::Sexp::Atom(sexp::Atom::True),
                         sexp::Atom::Digit(_) => panic!(),
                     },
-                    sexp::Sexp::List(_) => return eval_sexp_internal(sexp::Sexp::List(l), g_map, fn_map),
+                    sexp::Sexp::List(_) => eval_sexp_internal(sexp::Sexp::List(l), g_map, fn_map),
                 } // match first list elem
             } // not empty list?
         } // is a list?

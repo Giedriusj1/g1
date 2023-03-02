@@ -10,7 +10,7 @@ fn extract_single_char(mut chars: std::str::Chars, c: char, token_type: Token) -
     let mut count = 0;
 
     loop {
-        count = count + 1;
+        count += 1;
 
         match chars.next() {
             Some(char) => {
@@ -29,7 +29,7 @@ fn extract_single_char(mut chars: std::str::Chars, c: char, token_type: Token) -
         break;
     }
 
-    return None;
+    None
 }
 
 fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
@@ -38,7 +38,7 @@ fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     let mut digits = String::new();
 
     loop {
-        count = count + 1;
+        count += 1;
 
         match chars.next() {
             Some(char) => {
@@ -53,7 +53,7 @@ fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                 if char.is_numeric() {
                     digits.push(char);
                 } else {
-                    count = count - 1;
+                    count -= 1;
                     break;
                 }
             }
@@ -63,8 +63,8 @@ fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     }
 
     match digits.parse::<i32>() {
-        Ok(n) => return Some((Token::Digit(n), count)),
-        Err(_) => (return None),
+        Ok(n) => Some((Token::Digit(n), count)),
+        Err(_) => None,
     }
 }
 
@@ -74,7 +74,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     let mut letters = String::new();
 
     loop {
-        count = count + 1;
+        count += 1;
 
         match chars.next() {
             Some(char) => {
@@ -96,7 +96,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                 {
                     letters.push(char);
                 } else {
-                    count = count - 1;
+                    count -= 1;
                     break;
                 }
             }
@@ -106,9 +106,9 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     }
 
     if letters.is_empty() {
-        return None;
+        None
     } else {
-        Some((Token::String(String::from(letters)), count))
+        Some((Token::String(letters), count))
     }
 }
 
@@ -128,12 +128,12 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
         }
     }
 
-    return None;
+    None
 }
 
 pub(crate) fn extract_tokens(stra: String) -> Vec<Token> {
-    let str = stra.replace("\n", " ");
-    let str = str.replace("\t", " ");
+    let str = stra.replace('\n', " ");
+    let str = str.replace('\t', " ");
 
     let mut tokens: Vec<Token> = vec![];
 
