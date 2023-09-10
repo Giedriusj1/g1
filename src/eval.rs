@@ -115,6 +115,11 @@ pub(crate) fn eval_sexp_internal(
                                 } else {
                                     return sexp::Sexp::Atom(sexp::Atom::Nil);
                                 }
+                            } else if s == "%" {
+                                return sexp::Sexp::Atom(sexp::Atom::Digit(
+                                    eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
+                                        % eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                ));
                             } else if s == "progn" {
                                 // Eval all and return last
                                 let statements = l.iter().enumerate().skip(1); // Skip the actual "progn"
