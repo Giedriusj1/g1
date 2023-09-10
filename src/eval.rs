@@ -1,37 +1,36 @@
-use crate::sexp;
+use crate::sexp::{Atom, Sexp};
 
 use std::collections::HashMap;
 
-pub(crate) fn eval_sexp(sexp: sexp::Sexp) -> sexp::Sexp {
-    let mut global_map: HashMap<String, sexp::Sexp> = HashMap::new();
+pub(crate) fn eval_sexp(sexp: Sexp) -> Sexp {
+    let mut global_map: HashMap<String, Sexp> = HashMap::new();
 
-    let mut fn_map: Vec<HashMap<String, sexp::Sexp>> = vec![];
+    let mut fn_map: Vec<HashMap<String, Sexp>> = vec![];
 
     eval_sexp_internal(sexp, &mut global_map, &mut fn_map)
 }
 
 fn eval_sexp_expect_digit(
-    sexp: sexp::Sexp,
-    g_map: &mut HashMap<String, sexp::Sexp>,
-    fn_map: &mut Vec<HashMap<String, sexp::Sexp>>,
+    sexp: Sexp,
+    g_map: &mut HashMap<String, Sexp>,
+    fn_map: &mut Vec<HashMap<String, Sexp>>,
 ) -> i32 {
     match eval_sexp_internal(sexp, g_map, fn_map) {
-        sexp::Sexp::Atom(sexp::Atom::Digit(d)) => d,
+        Sexp::Atom(Atom::Digit(d)) => d,
         _ => panic!(),
     }
 }
 
 fn get_from_fn_map_or_global(
     var_name: String,
-    g_map: &mut HashMap<String, sexp::Sexp>,
-    fn_map: &mut Vec<HashMap<String, sexp::Sexp>>,
-) -> Option<sexp::Sexp> {
+    g_map: &HashMap<String, Sexp>,
+    fn_map: &Vec<HashMap<String, Sexp>>,
+) -> Option<Sexp> {
     // We'll try to find the var in a function var stack first
 
     for var in fn_map.iter().rev() {
-        match var.get(&var_name) {
-            Some(sexp) => return Some(sexp.to_owned()),
-            None => (),
+        if let Some(sexp) = var.get(&var_name) {
+            return Some(sexp.to_owned());
         }
     }
 
@@ -39,62 +38,62 @@ fn get_from_fn_map_or_global(
 }
 
 pub(crate) fn eval_sexp_internal(
-    sexp: sexp::Sexp,
-    g_map: &mut HashMap<String, sexp::Sexp>,
-    fn_map: &mut Vec<HashMap<String, sexp::Sexp>>,
-) -> sexp::Sexp {
+    sexp: Sexp,
+    g_map: &mut HashMap<String, Sexp>,
+    fn_map: &mut Vec<HashMap<String, Sexp>>,
+) -> Sexp {
     match sexp {
-        sexp::Sexp::Atom(a) => match a {
-            sexp::Atom::Symbol(s) => {
+        Sexp::Atom(a) => match a {
+            Atom::Symbol(s) => {
                 if s == "nil" {
-                    return sexp::Sexp::Atom(sexp::Atom::Nil);
+                    return Sexp::Atom(Atom::Nil);
                 }
                 if s == "t" {
-                    return sexp::Sexp::Atom(sexp::Atom::True);
+                    return Sexp::Atom(Atom::True);
                 }
 
                 match get_from_fn_map_or_global(s.clone(), g_map, fn_map) {
                     Some(var) => match var {
-                        sexp::Sexp::Atom(a) => sexp::Sexp::Atom(a),
-                        sexp::Sexp::List(l) => todo!("todo here pls"),
+                        Sexp::Atom(a) => Sexp::Atom(a),
+                        Sexp::List(_l) => todo!("todo here pls"),
                     },
                     None => panic!("symbol {s} is not defined"),
                 }
             }
-            _ => sexp::Sexp::Atom(a),
+            _ => Sexp::Atom(a),
         },
-        sexp::Sexp::List(l) => {
+        Sexp::List(l) => {
             if l.is_empty() {
-                sexp::Sexp::Atom(sexp::Atom::Nil) // empty list, so treat it as nil
+                Sexp::Atom(Atom::Nil) // empty list, so treat it as nil
             } else {
                 match l.get(0).unwrap() {
-                    sexp::Sexp::Atom(a) => match a {
-                        sexp::Atom::Symbol(s) => {
+                    Sexp::Atom(a) => match a {
+                        Atom::Symbol(s) => {
                             if s == "quote" {
                                 return l.get(1).unwrap().clone();
                             } else if s == "message" {
                                 println!("message {:#?}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
-                                return sexp::Sexp::Atom(sexp::Atom::True);
+                                return Sexp::Atom(Atom::True);
                             } else if s == "==" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                     == eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
-                                    return sexp::Sexp::Atom(sexp::Atom::True);
+                                    return Sexp::Atom(Atom::True);
                                 } else {
-                                    return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                    return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == "-" {
-                                return sexp::Sexp::Atom(sexp::Atom::Digit(
+                                return Sexp::Atom(Atom::Digit(
                                     eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                         - eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "+" {
-                                return sexp::Sexp::Atom(sexp::Atom::Digit(
+                                return Sexp::Atom(Atom::Digit(
                                     eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                         + eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "*" {
-                                return sexp::Sexp::Atom(sexp::Atom::Digit(
+                                return Sexp::Atom(Atom::Digit(
                                     eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                         * eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
@@ -102,20 +101,20 @@ pub(crate) fn eval_sexp_internal(
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                     < eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
-                                    return sexp::Sexp::Atom(sexp::Atom::True);
+                                    return Sexp::Atom(Atom::True);
                                 } else {
-                                    return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                    return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == ">" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                     > eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
-                                    return sexp::Sexp::Atom(sexp::Atom::True);
+                                    return Sexp::Atom(Atom::True);
                                 } else {
-                                    return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                    return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == "%" {
-                                return sexp::Sexp::Atom(sexp::Atom::Digit(
+                                return Sexp::Atom(Atom::Digit(
                                     eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                         % eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
@@ -132,13 +131,12 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "setq" {
                                 match l.get(1).unwrap().clone() {
-                                    sexp::Sexp::Atom(sexp::Atom::Symbol(s)) => {
-                                        let insert = eval_sexp_internal(l.get(2).unwrap().clone(), g_map, fn_map);
+                                    Sexp::Atom(Atom::Symbol(s)) => {
+                                        let new_value = eval_sexp_internal(l.get(2).unwrap().clone(), g_map, fn_map);
 
-                                        g_map.insert(s, insert.clone());
+                                        g_map.insert(s, new_value.clone());
 
-                                        return insert;
-                                        // return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                        return new_value;
                                     }
                                     _ => {
                                         panic!("a");
@@ -146,27 +144,27 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "defun" {
                                 let defun_name = match l.get(1).unwrap() {
-                                    sexp::Sexp::Atom(a) => match a {
-                                        sexp::Atom::Symbol(s) => s,
+                                    Sexp::Atom(a) => match a {
+                                        Atom::Symbol(s) => s,
                                         _ => panic!("aa"),
                                     },
-                                    sexp::Sexp::List(_) => panic!(),
+                                    Sexp::List(_) => panic!(),
                                 };
 
                                 // eprintln!("defun {l:#?}");
-                                g_map.insert(defun_name.to_owned(), sexp::Sexp::List(l));
+                                g_map.insert(defun_name.to_owned(), Sexp::List(l));
 
-                                return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                return Sexp::Atom(Atom::Nil);
                             } else if s == "if" {
                                 // eprintln!("l.get(1).unwrap() {:#?}", l.get(1).unwrap());
 
                                 // eval the conditional statement:
                                 match eval_sexp_internal(l.get(1).unwrap().to_owned(), g_map, fn_map) {
-                                    sexp::Sexp::Atom(sexp::Atom::Nil) => match l.get(3) {
+                                    Sexp::Atom(Atom::Nil) => match l.get(3) {
                                         // if false, eval the else statement
                                         Some(sexp) => return eval_sexp_internal(sexp.to_owned(), g_map, fn_map),
                                         None => {
-                                            return sexp::Sexp::Atom(sexp::Atom::Nil);
+                                            return Sexp::Atom(Atom::Nil);
                                         }
                                     },
                                     _ => {
@@ -177,7 +175,7 @@ pub(crate) fn eval_sexp_internal(
                                 let first = eval_sexp_internal(l.get(1).unwrap().to_owned(), g_map, fn_map);
 
                                 // if first evals to nil, return second
-                                if let sexp::Sexp::Atom(sexp::Atom::Nil) = first {
+                                if let Sexp::Atom(Atom::Nil) = first {
                                     return eval_sexp_internal(l.get(2).unwrap().to_owned(), g_map, fn_map);
                                 } else {
                                     return first;
@@ -186,27 +184,21 @@ pub(crate) fn eval_sexp_internal(
                             match get_from_fn_map_or_global(s.clone(), g_map, fn_map) {
                                 Some(var) => {
                                     match var {
-                                        sexp::Sexp::Atom(a) => sexp::Sexp::Atom(a),
+                                        Sexp::Atom(a) => Sexp::Atom(a),
 
-                                        sexp::Sexp::List(ourfn) => {
+                                        Sexp::List(ourfn) => {
                                             let ourfnparams = match ourfn.get(2).unwrap() {
-                                                sexp::Sexp::List(l) => l,
+                                                Sexp::List(l) => l,
                                                 _ => panic!("function params should be a list"),
                                             };
 
-                                            let mut current_function_param_map: HashMap<String, sexp::Sexp> =
-                                                HashMap::new();
+                                            let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
                                             // Map variable names to values passed into the function
                                             for (index, var) in ourfnparams.iter().enumerate() {
                                                 // println!("index {:#?}, var: {:#?}", index, var);
 
-                                                let var_string = match var {
-                                                    sexp::Sexp::Atom(a) => match a {
-                                                        sexp::Atom::Symbol(s) => s,
-                                                        _ => panic!(""),
-                                                    },
-                                                    _ => panic!(""),
-                                                };
+                                                let var_string =
+                                                    if let Sexp::Atom(Atom::Symbol(s)) = var { s } else { panic!("") };
 
                                                 let v = l.get(index + 1).unwrap().clone();
 
@@ -228,11 +220,11 @@ pub(crate) fn eval_sexp_internal(
                                 None => panic!("unrecognized symbol: {s}"),
                             }
                         }
-                        sexp::Atom::Nil => sexp::Sexp::Atom(sexp::Atom::Nil),
-                        sexp::Atom::True => sexp::Sexp::Atom(sexp::Atom::True),
-                        sexp::Atom::Digit(_) => panic!(),
+                        Atom::Nil => Sexp::Atom(Atom::Nil),
+                        Atom::True => Sexp::Atom(Atom::True),
+                        Atom::Digit(_) => panic!(),
                     },
-                    sexp::Sexp::List(_) => eval_sexp_internal(sexp::Sexp::List(l), g_map, fn_map),
+                    Sexp::List(_) => eval_sexp_internal(Sexp::List(l), g_map, fn_map),
                 } // match first list elem
             } // not empty list?
         } // is a list?

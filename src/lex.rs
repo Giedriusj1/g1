@@ -139,16 +139,12 @@ pub(crate) fn extract_tokens(stra: String) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
 
     let mut start_chars = str.chars();
-    loop {
-        match extract_token(start_chars.clone()) {
-            Some((token, size)) => {
-                tokens.push(token);
 
-                for _ in 0..size {
-                    start_chars.next();
-                }
-            }
-            None => break,
+    while let Some((token, size)) = extract_token(start_chars.clone()) {
+        tokens.push(token);
+
+        for _ in 0..size {
+            start_chars.next();
         }
     }
 
