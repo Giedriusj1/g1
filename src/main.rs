@@ -5,7 +5,12 @@ mod sexp;
 use std::fs;
 
 fn main() {
-    let text = fs::read_to_string("./test.g1")
+    // read parameter passed to the program
+    let args: Vec<String> = std::env::args().collect();
+
+    let filename: String = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
+
+    let text = fs::read_to_string(filename)
         .unwrap()
         .lines()
         .filter(|&line| !line.trim().starts_with(";;"))
@@ -20,4 +25,5 @@ fn main() {
 
     let eval = eval::eval_sexp(sexp);
     println!("eval {eval:#?}");
+
 }

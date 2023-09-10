@@ -45,7 +45,7 @@ pub(crate) fn eval_sexp_internal(
 ) -> sexp::Sexp {
     match sexp {
         sexp::Sexp::Atom(a) => match a {
-            sexp::Atom::String(s) => {
+            sexp::Atom::Symbol(s) => {
                 if s == "nil" {
                     return sexp::Sexp::Atom(sexp::Atom::Nil);
                 }
@@ -75,6 +75,7 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "msg" {
                                 eprintln!("msg: {:#?}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
                                 return sexp::Sexp::Atom(sexp::Atom::True);
+
                             } else if s == "==" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                     == eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
@@ -127,7 +128,7 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "setq" {
                                 match l.get(1).unwrap().clone() {
-                                    sexp::Sexp::Atom(sexp::Atom::String(s)) => {
+                                    sexp::Sexp::Atom(sexp::Atom::Symbol(s)) => {
                                         g_map.insert(s, l.get(2).unwrap().clone());
 
                                         return sexp::Sexp::Atom(sexp::Atom::Nil);
@@ -139,7 +140,7 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "defun" {
                                 let defun_name = match l.get(1).unwrap() {
                                     sexp::Sexp::Atom(a) => match a {
-                                        sexp::Atom::String(s) => s,
+                                        sexp::Atom::Symbol(s) => s,
                                         _ => panic!("aa"),
                                     },
                                     sexp::Sexp::List(_) => panic!(),
@@ -181,7 +182,7 @@ pub(crate) fn eval_sexp_internal(
 
                                                 let var_string = match var {
                                                     sexp::Sexp::Atom(a) => match a {
-                                                        sexp::Atom::String(s) => s,
+                                                        sexp::Atom::Symbol(s) => s,
                                                         _ => panic!(""),
                                                     },
                                                     _ => panic!(""),
