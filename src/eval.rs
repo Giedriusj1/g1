@@ -69,10 +69,28 @@ pub(crate) fn eval_sexp_internal(
                 match l.get(0).unwrap() {
                     Sexp::Atom(a) => match a {
                         Atom::Symbol(s) => {
-                            if s == "quote" {
+                            if s == "cons" {
+                                assert_eq!(l.len(), 3);
+                                let first = eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map);
+
+                                match eval_sexp_internal(l.get(2).unwrap().clone(), g_map, fn_map) {
+                                    Sexp::Atom(a) => return Sexp::List(vec![first, Sexp::Atom(a)]),
+                                    Sexp::List(l) => {
+                                        let mut vec = vec![first];
+                                        vec.extend(l.clone());
+
+                                        return Sexp::List(vec);
+                                    }
+                                }
+                            } else if s == "car" {
+                                match eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map) {
+                                    Sexp::Atom(_) => todo!(),
+                                    Sexp::List(l) => return l.get(0).unwrap().clone(),
+                                }
+                            } else if s == "quote" {
                                 return l.get(1).unwrap().clone();
                             } else if s == "message" {
-                                println!("message {:#?}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
+                                println!("{}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
                                 return Sexp::Atom(Atom::True);
                             } else if s == "==" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
