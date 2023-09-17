@@ -147,10 +147,8 @@ pub(crate) fn eval_sexp_internal(
                                         % eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "progn" {
-                                // Eval all and return last
-                                let statements = l.iter().enumerate().skip(1); // Skip the actual "progn"
-
-                                for (pos, statement) in statements {
+                                // Skip the actual "progn", then eval all and return last
+                                for (pos, statement) in l.iter().enumerate().skip(1) {
                                     if pos + 1 == l.len() {
                                         return eval_sexp_internal(statement.clone(), g_map, fn_map);
                                     } else {
