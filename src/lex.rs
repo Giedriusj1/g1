@@ -113,6 +113,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
     let match_functions: Vec<fn(chars: std::str::Chars) -> Option<(Token, usize)>> = vec![
         move |x| extract_single_char(x, '(', Token::LeftParen),

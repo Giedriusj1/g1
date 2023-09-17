@@ -24,7 +24,7 @@ fn eval_sexp_expect_digit(
 fn get_from_fn_map_or_global(
     var_name: String,
     g_map: &HashMap<String, Sexp>,
-    fn_map: &Vec<HashMap<String, Sexp>>,
+    fn_map: &[HashMap<String, Sexp>],
 ) -> Option<Sexp> {
     // We'll try to find the var in a function var stack first
 
