@@ -28,7 +28,7 @@ fn main() {
             println!("sexp {sexp:#?}");
 
             let eval = eval::eval_sexp(sexp);
-            println!("eval {eval:#?}");
+            println!("eval to: {eval}");
         })
         .unwrap();
 
