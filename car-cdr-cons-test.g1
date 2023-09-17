@@ -1,0 +1,11 @@
+(progn
+  (message (car (quote (b 2 3))))
+
+  (message (cdr (quote (1 2 3))))
+
+  (message (cdr (quote (2 2 21 2 3))))
+
+  (message (cons (+ 1 1) (quote (1 2 3))))
+  (message (cons (+ 1 1) 1))
+
+)
