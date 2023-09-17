@@ -69,7 +69,17 @@ pub(crate) fn eval_sexp_internal(
                 match l.get(0).unwrap() {
                     Sexp::Atom(a) => match a {
                         Atom::Symbol(s) => {
-                            if s == "cons" {
+                            if s == "cdr" {
+                                assert_eq!(l.len(), 2);
+                                return match eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map) {
+                                    Sexp::Atom(_) => panic!("cdr needs a list"),
+                                    Sexp::List(l) => {
+                                        let mut vec = l.clone();
+                                        vec.remove(0);
+                                        Sexp::List(vec)
+                                    }
+                                };
+                            } else if s == "cons" {
                                 assert_eq!(l.len(), 3);
                                 let first = eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map);
 
