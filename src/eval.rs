@@ -168,22 +168,7 @@ pub(crate) fn eval_sexp_internal(
                                         panic!("a");
                                     }
                                 }
-                            } else if s == "defun" {
-                                let defun_name = match l.get(1).unwrap() {
-                                    Sexp::Atom(a) => match a {
-                                        Atom::Symbol(s) => s,
-                                        _ => panic!("aa"),
-                                    },
-                                    Sexp::List(_) => panic!(),
-                                };
-
-                                // eprintln!("defun {l:#?}");
-                                g_map.insert(defun_name.to_owned(), Sexp::List(l));
-
-                                return Sexp::Atom(Atom::Nil);
                             } else if s == "if" {
-                                // eprintln!("l.get(1).unwrap() {:#?}", l.get(1).unwrap());
-
                                 // eval the conditional statement:
                                 match eval_sexp_internal(l.get(1).unwrap().to_owned(), g_map, fn_map) {
                                     Sexp::Atom(Atom::Nil) => match l.get(3) {
@@ -213,7 +198,7 @@ pub(crate) fn eval_sexp_internal(
                                         Sexp::Atom(a) => Sexp::Atom(a),
 
                                         Sexp::List(ourfn) => {
-                                            let ourfnparams = match ourfn.get(2).unwrap() {
+                                            let ourfnparams = match ourfn.get(0).unwrap() {
                                                 Sexp::List(l) => l,
                                                 _ => panic!("function params should be a list"),
                                             };
@@ -235,7 +220,7 @@ pub(crate) fn eval_sexp_internal(
 
                                             fn_map.push(current_function_param_map);
 
-                                            let ret = eval_sexp_internal(ourfn.get(3).unwrap().clone(), g_map, fn_map);
+                                            let ret = eval_sexp_internal(ourfn.get(1).unwrap().clone(), g_map, fn_map);
 
                                             fn_map.pop();
 
