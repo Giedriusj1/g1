@@ -2,10 +2,10 @@ use crate::lex;
 
 #[derive(Clone, Debug)]
 pub(crate) enum Atom {
-    Nil,            // ()
-    True,           // #t
-    Digit(i32),     // A digit
-    Symbol(String), // A symbol
+    Nil,         // ()
+    True,        // #t
+    Num(i32),    // A digit
+    Sym(String), // A symbol
 }
 
 impl std::cmp::PartialEq for Atom {
@@ -13,8 +13,8 @@ impl std::cmp::PartialEq for Atom {
         match (self, other) {
             (Atom::Nil, Atom::Nil) => true,
             (Atom::True, Atom::True) => true,
-            (Atom::Digit(d1), Atom::Digit(d2)) => d1 == d2,
-            (Atom::Symbol(s1), Atom::Symbol(s2)) => s1 == s2,
+            (Atom::Num(d1), Atom::Num(d2)) => d1 == d2,
+            (Atom::Sym(s1), Atom::Sym(s2)) => s1 == s2,
             _ => false,
         }
     }
@@ -42,8 +42,8 @@ impl std::fmt::Display for Sexp {
             Sexp::Atom(atom) => match atom {
                 Atom::Nil => write!(f, "nil")?,
                 Atom::True => write!(f, "t")?,
-                Atom::Digit(d) => write!(f, "{}", d)?,
-                Atom::Symbol(s) => write!(f, "{}", s)?,
+                Atom::Num(d) => write!(f, "{}", d)?,
+                Atom::Sym(s) => write!(f, "{}", s)?,
             },
             Sexp::List(l) => {
                 write!(f, "(")?;
@@ -75,8 +75,16 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                 current_sexp = sexp_stack.pop().unwrap();
                 current_sexp.push(Sexp::List(finished_sexp));
             }
-            lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Digit(d))),
-            lex::Token::String(s) => current_sexp.push(Sexp::Atom(Atom::Symbol(s))),
+            lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Num(d))),
+            lex::Token::String(s) => {
+                if s == "nil" {
+                    current_sexp.push(Sexp::Atom(Atom::Nil));
+                } else if s == "t" {
+                    current_sexp.push(Sexp::Atom(Atom::True));
+                } else {
+                    current_sexp.push(Sexp::Atom(Atom::Sym(s)))
+                }
+            }
         }
     }
 
