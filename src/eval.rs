@@ -10,14 +10,10 @@ pub(crate) fn eval_sexp(sexp: Sexp) -> Sexp {
     eval_sexp_internal(sexp, &mut global_map, &mut fn_map)
 }
 
-fn eval_sexp_expect_digit(
-    sexp: Sexp,
-    g_map: &mut HashMap<String, Sexp>,
-    fn_map: &mut Vec<HashMap<String, Sexp>>,
-) -> i32 {
+fn eval_sexp_expect_num(sexp: Sexp, g_map: &mut HashMap<String, Sexp>, fn_map: &mut Vec<HashMap<String, Sexp>>) -> i32 {
     match eval_sexp_internal(sexp, g_map, fn_map) {
         Sexp::Atom(Atom::Digit(d)) => d,
-        _ => panic!(),
+        _ => panic!("expected a number"),
     }
 }
 
@@ -100,8 +96,8 @@ pub(crate) fn eval_sexp_internal(
                                 println!("{}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
                                 return Sexp::Atom(Atom::True);
                             } else if s == "=" {
-                                if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                    == eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                    == eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
@@ -125,40 +121,38 @@ pub(crate) fn eval_sexp_internal(
                                 for (pos, statement) in l.iter().enumerate().skip(1) {
                                     if pos + 1 == l.len() {
                                         return eval_sexp_internal(statement.clone(), g_map, fn_map);
-                                    } else {
-                                        if let Sexp::Atom(Atom::Nil) =
-                                            eval_sexp_internal(statement.clone(), g_map, fn_map)
-                                        {
-                                            return Sexp::Atom(Atom::Nil);
-                                        }
+                                    } else if let Sexp::Atom(Atom::Nil) =
+                                        eval_sexp_internal(statement.clone(), g_map, fn_map)
+                                    {
+                                        return Sexp::Atom(Atom::Nil);
                                     }
                                 }
                             } else if s == "-" {
                                 return Sexp::Atom(Atom::Digit(
-                                    eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                        - eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                        - eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "+" {
                                 return Sexp::Atom(Atom::Digit(
-                                    eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                        + eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                        + eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "*" {
                                 return Sexp::Atom(Atom::Digit(
-                                    eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                        * eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                        * eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "<" {
-                                if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                    < eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                    < eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
                                     return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == ">" {
-                                if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                    > eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                    > eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
@@ -166,8 +160,8 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "%" {
                                 return Sexp::Atom(Atom::Digit(
-                                    eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
-                                        % eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap().clone(), g_map, fn_map)
+                                        % eval_sexp_expect_num(l.get(2).unwrap().clone(), g_map, fn_map),
                                 ));
                             } else if s == "progn" {
                                 // Skip the actual "progn", then eval all and return last
