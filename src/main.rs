@@ -3,12 +3,12 @@ mod lex;
 mod sexp;
 
 fn main() {
-    // time how long it takes to run the program
-    let start = std::time::Instant::now();
-
     let child = std::thread::Builder::new()
         .stack_size(512 * 1024 * 1024)
         .spawn(move || {
+            // time how long it takes to run the program
+            let start = std::time::Instant::now();
+
             // read parameter passed to the program
             let args: Vec<String> = std::env::args().collect();
 
@@ -27,13 +27,13 @@ fn main() {
             let sexp = sexp::create_sexp(tokens);
             // println!("sexp {sexp:#?}");
 
-            let eval = eval::eval_sexp(sexp);
+            let eval = eval::eval_sexp(&sexp);
             println!("eval to: {eval}");
+
+            let end = std::time::Instant::now();
+            println!("execution time: {:?}", end - start);
         })
         .unwrap();
 
     child.join().unwrap();
-
-    let end = std::time::Instant::now();
-    println!("execution time: {:?}", end - start);
 }
