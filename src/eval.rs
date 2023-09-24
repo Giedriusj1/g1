@@ -53,10 +53,7 @@ pub(crate) fn eval_sexp_internal(
                 }
 
                 match get_from_fn_map_or_global(s.clone(), g_map, fn_map) {
-                    Some(var) => match var {
-                        Sexp::Atom(a) => Sexp::Atom(a),
-                        Sexp::List(_l) => todo!("todo here pls"),
-                    },
+                    Some(var) => var,
                     None => panic!("symbol {s} is not defined"),
                 }
             }
@@ -102,13 +99,39 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "message" {
                                 println!("{}", eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map));
                                 return Sexp::Atom(Atom::True);
-                            } else if s == "==" {
+                            } else if s == "=" {
                                 if eval_sexp_expect_digit(l.get(1).unwrap().clone(), g_map, fn_map)
                                     == eval_sexp_expect_digit(l.get(2).unwrap().clone(), g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
                                     return Sexp::Atom(Atom::Nil);
+                                }
+                            } else if s == "equal" {
+                                if eval_sexp_internal(l.get(1).unwrap().clone(), g_map, fn_map)
+                                    == eval_sexp_internal(l.get(2).unwrap().clone(), g_map, fn_map)
+                                {
+                                    return Sexp::Atom(Atom::True);
+                                } else {
+                                    return Sexp::Atom(Atom::Nil);
+                                }
+                            } else if s == "and" {
+                                // DEFUN ("and", Fand, Sand, 0, UNEVALLED, 0,
+                                //        doc: /* Eval args until one of them yields nil, then return nil.
+                                // The remaining args are not evalled at all.
+                                // If no arg yields nil, return the last arg's value.
+                                // usage: (and CONDITIONS...)  */)
+
+                                for (pos, statement) in l.iter().enumerate().skip(1) {
+                                    if pos + 1 == l.len() {
+                                        return eval_sexp_internal(statement.clone(), g_map, fn_map);
+                                    } else {
+                                        if let Sexp::Atom(Atom::Nil) =
+                                            eval_sexp_internal(statement.clone(), g_map, fn_map)
+                                        {
+                                            return Sexp::Atom(Atom::Nil);
+                                        }
+                                    }
                                 }
                             } else if s == "-" {
                                 return Sexp::Atom(Atom::Digit(

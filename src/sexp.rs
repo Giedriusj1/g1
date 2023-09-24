@@ -2,18 +2,38 @@ use crate::lex;
 
 #[derive(Clone, Debug)]
 pub(crate) enum Atom {
-    Nil,        // ()
-    True,       // #t
-    Digit(i32), // A digit
+    Nil,            // ()
+    True,           // #t
+    Digit(i32),     // A digit
     Symbol(String), // A symbol
-                // QuotedSymbol(String), // A quoted string
-                // QuotedString(String), // A quoted string
+}
+
+impl std::cmp::PartialEq for Atom {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Atom::Nil, Atom::Nil) => true,
+            (Atom::True, Atom::True) => true,
+            (Atom::Digit(d1), Atom::Digit(d2)) => d1 == d2,
+            (Atom::Symbol(s1), Atom::Symbol(s2)) => s1 == s2,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 pub(crate) enum Sexp {
     Atom(Atom),
     List(Vec<Sexp>),
+}
+
+impl std::cmp::PartialEq for Sexp {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Sexp::Atom(a1), Sexp::Atom(a2)) => a1 == a2,
+            (Sexp::List(l1), Sexp::List(l2)) => l1 == l2,
+            _ => false,
+        }
+    }
 }
 
 impl std::fmt::Display for Sexp {
