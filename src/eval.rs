@@ -86,6 +86,18 @@ pub(crate) fn eval_sexp_internal(
                                         return Sexp::List(vec);
                                     }
                                 }
+                            } else if s == "list" {
+                                if l.len() == 1 {
+                                    return Sexp::Atom(Atom::Nil);
+                                }
+
+                                let mut vec = vec![];
+
+                                for sexp in l.iter().skip(1) {
+                                    vec.push(eval_sexp_internal(sexp, g_map, fn_map));
+                                }
+
+                                return Sexp::List(vec);
                             } else if s == "car" {
                                 match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
                                     Sexp::Atom(_) => todo!(),
@@ -250,6 +262,7 @@ pub(crate) fn eval_sexp_internal(
                         Atom::Nil => Sexp::Atom(Atom::Nil),
                         Atom::True => Sexp::Atom(Atom::True),
                         Atom::Num(_) => panic!(),
+                        Atom::Apostrophe => panic!(),
                     },
                     Sexp::List(_) => eval_sexp_internal(&Sexp::List(l.clone()), g_map, fn_map), // TODO: is this clone necessary?
                 } // match first list elem
