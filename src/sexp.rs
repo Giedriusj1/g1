@@ -6,8 +6,6 @@ pub(crate) enum Atom {
     True,        // #t
     Num(i32),    // A digit
     Sym(String), // A symbol
-    // TODO: We might be able to remove this altogether
-    Apostrophe,  // '
 }
 
 impl std::cmp::PartialEq for Atom {
@@ -46,7 +44,6 @@ impl std::fmt::Display for Sexp {
                 Atom::True => write!(f, "t")?,
                 Atom::Num(d) => write!(f, "{}", d)?,
                 Atom::Sym(s) => write!(f, "{}", s)?,
-                Atom::Apostrophe => write!(f, "'")?,
             },
             Sexp::List(l) => {
                 write!(f, "(")?;
@@ -93,16 +90,14 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
                             right_encountered += 1;
 
                             if left_encountered != right_encountered {
-                                skip += 1;
                                 continue;
                             }
 
-                            let slice = &tokens[index + 2..index + skip + 1].to_vec().clone();
+                            let slice = &tokens[index + 1..index + skip + 2].to_vec().clone();
 
                             for _ in 0..found_apostrophes {
                                 expanded_tokens.push(lex::Token::LeftParen);
                                 expanded_tokens.push(lex::Token::String("quote".to_string()));
-                                expanded_tokens.push(lex::Token::LeftParen);
                             }
 
                             let mut expanded = expand_quote(slice.clone());
@@ -113,6 +108,7 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
                                 expanded_tokens.push(lex::Token::RightParen);
                             }
                             found_apostrophes = 0;
+                            skip += 1;
                             break;
                         };
                     }
@@ -120,9 +116,8 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
                 lex::Token::Apostrophe => {
                     continue;
                 }
-
-                // If it's a symbol, then we need to wrap it in a quote
-                lex::Token::Digit(_) => {
+                // If it's a symbol or a digit, then we need to wrap it in a quote
+                lex::Token::String(_) | lex::Token::Digit(_) => {
                     for _ in 0..found_apostrophes {
                         expanded_tokens.push(lex::Token::LeftParen);
                         expanded_tokens.push(lex::Token::String("quote".to_string()));
@@ -137,24 +132,10 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
                     found_apostrophes = 0;
                     continue;
                 }
-                lex::Token::String(_) => {
-                    for _ in 0..found_apostrophes {
-                        expanded_tokens.push(lex::Token::LeftParen);
-                        expanded_tokens.push(lex::Token::String("quote".to_string()));
-                    }
-
-                    expanded_tokens.push(next_token.clone());
-                    for _ in 0..found_apostrophes {
-                        expanded_tokens.push(lex::Token::RightParen);
-                    }
-
-                    skip = 1;
-                    found_apostrophes = 0;
-                    continue;
-                }
-
                 lex::Token::RightParen => panic!("invalid syntax"),
             }
+
+            continue;
         }
 
         expanded_tokens.push(token.clone());
@@ -164,6 +145,7 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
 }
 
 pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
+    // Deal with apostrophes by expanding them into the quotation syntax
     let tokens = expand_quote(tokens);
 
     let mut sexp_stack: Vec<Vec<Sexp>> = vec![];
@@ -182,7 +164,6 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                 current_sexp.push(Sexp::List(finished_sexp));
             }
             lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Num(d))),
-            lex::Token::Apostrophe => current_sexp.push(Sexp::Atom(Atom::Apostrophe)),
             lex::Token::String(s) => {
                 if s == "nil" {
                     current_sexp.push(Sexp::Atom(Atom::Nil));
@@ -192,6 +173,7 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                     current_sexp.push(Sexp::Atom(Atom::Sym(s)))
                 }
             }
+            _ => panic!("invalid syntax"),
         }
     }
 

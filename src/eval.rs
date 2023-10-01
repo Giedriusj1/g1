@@ -262,7 +262,6 @@ pub(crate) fn eval_sexp_internal(
                         Atom::Nil => Sexp::Atom(Atom::Nil),
                         Atom::True => Sexp::Atom(Atom::True),
                         Atom::Num(_) => panic!(),
-                        Atom::Apostrophe => panic!(),
                     },
                     Sexp::List(_) => eval_sexp_internal(&Sexp::List(l.clone()), g_map, fn_map), // TODO: is this clone necessary?
                 } // match first list elem
