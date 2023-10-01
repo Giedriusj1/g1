@@ -1,7 +1,8 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Token {
     LeftParen,
     RightParen,
+    Apostrophe,
     Digit(i32),
     String(String),
 }
@@ -118,6 +119,7 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
     let match_functions: Vec<fn(chars: std::str::Chars) -> Option<(Token, usize)>> = vec![
         move |x| extract_single_char(x, '(', Token::LeftParen),
         move |x| extract_single_char(x, ')', Token::RightParen),
+        move |x| extract_single_char(x, '\'', Token::Apostrophe),
         extract_number,
         extract_string,
     ];
