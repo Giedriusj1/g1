@@ -183,6 +183,17 @@ pub(crate) fn eval_sexp_internal(
                                         eval_sexp_internal(statement, g_map, fn_map);
                                     }
                                 }
+                            } else if s == "set" {
+                                match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
+                                    Sexp::Atom(Atom::Sym(s)) => {
+                                        let new_value = eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+
+                                        g_map.insert(s, new_value.clone());
+
+                                        return new_value;
+                                    }
+                                    _ => panic!("set expects a symbol"),
+                                };
                             } else if s == "setq" {
                                 match l.get(1).unwrap().clone() {
                                     Sexp::Atom(Atom::Sym(s)) => {

@@ -1,0 +1,25 @@
+(progn
+  (setq defun
+	'((name params body)
+	  (set name (list
+		     params
+		     body
+		     ))))
+
+
+  (and
+
+
+   (defun 'testFunction '(a) '(* a 20))
+
+   (equal (testFunction 8) 160)
+
+
+
+   (defun 'testFunctionTwoParams '(a b) '(+ a b))
+
+   (equal (testFunctionTwoParams 1 11) 12)
+
+   )
+
+  )
