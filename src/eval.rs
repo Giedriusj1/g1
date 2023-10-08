@@ -274,7 +274,42 @@ pub(crate) fn eval_sexp_internal(
                         Atom::True => Sexp::Atom(Atom::True),
                         Atom::Num(_) => panic!(),
                     },
-                    Sexp::List(_) => eval_sexp_internal(&Sexp::List(l.clone()), g_map, fn_map), // TODO: is this clone necessary?
+                    Sexp::List(_) => {
+                        match eval_sexp_internal(l.get(0).unwrap(), g_map, fn_map) {
+                            Sexp::Atom(a) => Sexp::Atom(a),
+                            Sexp::List(ourfn) => {
+                                // We are evaluating a list, whose first element is a list
+                                // This must  a function call!
+
+                                let ourfnparams = match ourfn.get(0).unwrap() {
+                                    Sexp::List(l) => l,
+                                    _ => panic!("function params should be a list"),
+                                };
+
+                                let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+                                // Map variable names to values passed into the function
+                                for (index, var) in ourfnparams.iter().enumerate() {
+                                    // println!("index {:#?}, var: {:#?}", index, var);
+
+                                    let var_string = if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
+
+                                    let v = l.get(index + 1).unwrap().clone();
+
+                                    let var_eval = eval_sexp_internal(&v, g_map, fn_map);
+
+                                    current_function_param_map.insert(var_string.to_owned(), var_eval);
+                                }
+
+                                fn_map.push(current_function_param_map);
+
+                                let ret = eval_sexp_internal(ourfn.get(1).unwrap(), g_map, fn_map);
+
+                                fn_map.pop();
+
+                                ret
+                            }
+                        }
+                    }
                 } // match first list elem
             } // not empty list?
         } // is a list?
