@@ -1,0 +1,38 @@
+(progn
+
+  (setq defun
+	'((name params body)
+	  (set name (list
+		     params
+		     body
+		     ))))
+
+  (defun 'loop '(n body
+		 ;; aa
+		 )
+    '(
+      (if (> n 1)
+	  (progn
+	    (eval body)
+	    (loop (- n 1) body)
+	    )
+	)
+
+      )
+
+    )
+
+  (message loop)
+
+  ;; (loop  11 2 )
+
+  ;; (loop  11 '(message 'loopaaaaaaaaaaaa))
+
+  (eval '(mesage 'aa))
+
+  ;; (message 1)
+
+
+
+
+  )
