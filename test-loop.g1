@@ -7,14 +7,20 @@
 		     body
 		     ))))
 
-  (defun 'loop '(n body
-		 ;; aa
-		 )
+  (defun 'loop '(n body)
     '(
       (if (> n 1)
 	  (progn
-	    (eval body)
-	    (loop (- n 1) body)
+	    (message n)
+	    (message body)
+
+	    ;; (message 'hello)
+	    ;; (eval body)
+	    (message 'evaluatingbody)
+	    (body)
+	    ;; (message 'loopz)
+	    (message 'evaluatingbodyDone)
+	    (loop (- n 1) (quote body))
 	    )
 	)
 
@@ -22,13 +28,13 @@
 
     )
 
-  (message loop)
+  ;; (message loop)
 
   ;; (loop  11 2 )
 
-  ;; (loop  11 '(message 'loopaaaaaaaaaaaa))
+  (loop  11 '(message 'loopz))
 
-  (eval '(mesage 'aa))
+  ;; (eval (eval '(message 'aa)))
 
   ;; (message 1)
 
