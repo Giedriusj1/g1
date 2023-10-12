@@ -106,7 +106,12 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "quote" {
                                 return l.get(1).unwrap().clone();
                             } else if s == "eval" {
-                                return eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map);
+                                let statement = l.get(1).unwrap();
+                                // println!("eval statement: {}", statement);
+                                let after_eval = eval_sexp_internal(statement, g_map, fn_map);
+                                // println!("after eval: {}", after_eval);
+
+                                return eval_sexp_internal(&after_eval, g_map, fn_map);
                             } else if s == "message" {
                                 println!("{}", eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map));
                                 return Sexp::Atom(Atom::True);
