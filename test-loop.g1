@@ -1,44 +1,19 @@
 (progn
 
-  (setq defun
-	'((name params body)
-	  (set name (list
-		     params
-		     body
-		     ))))
-
-  (defun 'loop '(n body)
+  (defun 'loop '(iter body)
     '(
-      (if (> n 1)
+      (if (> iter 0)
 	  (progn
-	    (message n)
-	    (message body)
-
-	    ;; (message 'hello)
-	    ;; (eval body)
-	    (message 'evaluatingbody)
-	    (body)
-	    ;; (message 'loopz)
-	    (message 'evaluatingbodyDone)
-	    (loop (- n 1) (quote body))
-	    )
+	    ;; (message n)
+	    ;; (message body)
+	    (eval body)
+	    (loop (- iter 1) body))
 	)
-
       )
-
     )
 
-  ;; (message loop)
-
-  ;; (loop  11 2 )
-
-  (loop  11 '(message 'loopz))
-
-  ;; (eval (eval '(message 'aa)))
-
-  ;; (message 1)
-
-
-
-
+  (equal (loop 10 '(progn
+		     (message iter)
+		     ))
+	 nil)
   )

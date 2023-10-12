@@ -2,10 +2,13 @@ use crate::sexp::{Atom, Sexp};
 
 use std::collections::HashMap;
 
-pub(crate) fn eval_sexp(sexp: &Sexp) -> Sexp {
+// Top level function that evaluates a sexp after evaluating the intrinsics
+pub(crate) fn eval_sexp(intrinsics_sexp: &Sexp, sexp: &Sexp) -> Sexp {
     let mut global_map: HashMap<String, Sexp> = HashMap::new();
 
     let mut fn_map: Vec<HashMap<String, Sexp>> = vec![];
+
+    eval_sexp_internal(intrinsics_sexp, &mut global_map, &mut fn_map);
 
     eval_sexp_internal(sexp, &mut global_map, &mut fn_map)
 }

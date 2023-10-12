@@ -1,0 +1,16 @@
+;; This file is loader before any other file.
+
+(progn
+  (set 'defun
+       '((name params body)
+	 (set name (list
+		    params
+		    body))))
+
+  (defun 'lambda '(params body)
+    '(list
+      params
+      body)
+    )
+
+  )

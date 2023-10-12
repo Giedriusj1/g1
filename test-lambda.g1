@@ -1,11 +1,4 @@
 (progn
-
-  (setq lambda
-	'((params body)
-	  (list
-	   params
-	   body)))
-
   (equal ((lambda '(a) '(+ a 1))
 	  12)
 

@@ -1,10 +1,4 @@
 (progn
-
-
-
-  ;; (list 1 2)
-
-
   (and
 
    ;; empty list
