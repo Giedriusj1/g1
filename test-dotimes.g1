@@ -6,10 +6,6 @@
   ;;TODO: the original would do 0 1 2
   (dotimes '(a 3)
     '(progn
-       (message a)
-       (setq counter (+ counter a))
-       )
-
-    )
+       (setq counter (+ counter a))))
 
   (equal counter 6))
