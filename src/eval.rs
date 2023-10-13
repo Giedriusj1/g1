@@ -66,7 +66,62 @@ pub(crate) fn eval_sexp_internal(
                 match l.get(0).unwrap() {
                     Sexp::Atom(a) => match a {
                         Atom::Sym(s) => {
-                            if s == "cdr" {
+                            if s == "let" {
+                                // Let statement should bind variables for the duration of the let statement.
+
+                                let param_list = l.get(1).unwrap();
+                                // println!("param_list: {}", param_list);
+                                match param_list {
+                                    Sexp::List(l) => {
+                                        // println!("l: {:?}", l);
+
+                                        let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+
+                                        for var in l {
+                                            match var {
+                                                Sexp::Atom(_) => panic!("param list expects a list"),
+                                                Sexp::List(l) => {
+                                                    let var_string: &String = match l.get(0).unwrap() {
+                                                        Sexp::Atom(Atom::Sym(s)) => s,
+                                                        _ => panic!(),
+                                                    };
+
+                                                    let v = l.get(1).unwrap().clone();
+
+                                                    let var_eval = eval_sexp_internal(&v, g_map, fn_map);
+
+                                                    current_function_param_map.insert(var_string.to_owned(), var_eval);
+                                                }
+                                            }
+                                        }
+
+                                        fn_map.push(current_function_param_map);
+                                    }
+                                    _ => panic!("paramlist should be a list"),
+                                }
+
+                                // Skip the actual "let", and the subsequent paramlist,
+                                // then eval all remaining and return last
+                                let statements = l.iter().enumerate().skip(2);
+
+                                if statements.len() > 0 {
+                                    for (pos, statement) in statements {
+                                        // println!("pos: {}, statement: {}", pos, statement);
+                                        if pos + 1 == l.len() {
+                                            let r = eval_sexp_internal(statement, g_map, fn_map);
+
+                                            fn_map.pop();
+
+                                            return r;
+                                        } else {
+                                            eval_sexp_internal(statement, g_map, fn_map);
+                                        }
+                                    }
+                                } else {
+                                    fn_map.pop();
+                                    return Sexp::Atom(Atom::Nil);
+                                }
+                            } else if s == "cdr" {
                                 assert_eq!(l.len(), 2);
                                 return match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
                                     Sexp::Atom(_) => panic!("cdr needs a list"),

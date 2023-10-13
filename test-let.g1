@@ -1,0 +1,32 @@
+(progn
+
+  ;; let with no statements should eval into nil
+  (equal (let ((a 1) (b 2)))
+	 nil)
+
+  ;; simple let
+  (equal (let ((a 1) (b 2))
+	   (+ a b))
+	 3)
+
+
+  ;; nested let, shadowing
+  (equal (let ((a 1) (b 2))
+	   (let ((a 3) (b 4))
+	     (+ a b)))
+	 7)
+
+
+  ;; let should not leak variables
+  (equal
+   (progn
+
+     ;; This should have no side effects
+     (let ((a 1) (b 2)))
+
+     (setq a 4)
+     (setq b 4)
+     (+ a b))
+   8)
+
+  )

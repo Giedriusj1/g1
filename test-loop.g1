@@ -1,19 +1,12 @@
 (progn
 
-  (defun 'loop '(iter body)
-    '(
-      (if (> iter 0)
-	  (progn
-	    ;; (message n)
-	    ;; (message body)
-	    (eval body)
-	    (loop (- iter 1) body))
-	)
-      )
-    )
+  (setq counter 0)
 
-  (equal (loop 10 '(progn
-		     (message iter)
+  (equal (loop 100 '(progn
+		     (setq counter (+ counter 1))
 		     ))
 	 nil)
+
+  (equal counter 100)
+
   )

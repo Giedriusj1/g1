@@ -13,4 +13,33 @@
       body)
     )
 
+  (defun 'loop '(iter body)
+    '(
+      (if (> iter 0)
+	  (progn
+	    (eval body)
+	    (loop (- iter 1) body)))))
+
+
+  ;; (dotimes (bind 3)
+  ;;   (message (number-to-string bind))
+  ;;   )
+  ;; Currently behaves differently than the original, but it's a start.
+  (defun 'dotimes
+      '(bind body)
+    '(progn
+
+       ;; Make sure the variable is available
+       (set (car bind) (car (cdr bind) ))
+
+       (if (> (car (cdr bind) ) 0)
+	   (progn
+	     (eval body)
+	     (dotimes
+		 (list (car bind) (- (car (cdr bind) ) 1)) body
+
+		 )))))
+
+
+
   )
