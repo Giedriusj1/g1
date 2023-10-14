@@ -10,8 +10,7 @@
   (defun 'lambda '(params body)
     '(list
       params
-      body)
-    )
+      body))
 
   (defun 'loop '(iter body)
     '(
@@ -20,6 +19,11 @@
 	    (eval body)
 	    (loop (- iter 1) body)))))
 
+  (defun 'while '(test body)
+    '(if (eval test)
+	 (progn
+	   (eval body)
+	   (while test body))))
 
   ;; (dotimes (bind 3)
   ;;   (message (number-to-string bind))
@@ -36,10 +40,5 @@
 	   (progn
 	     (eval body)
 	     (dotimes
-		 (list (car bind) (- (car (cdr bind) ) 1)) body
-
-		 )))))
-
-
-
+		 (list (car bind) (- (car (cdr bind) ) 1)) body)))))
   )
