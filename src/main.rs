@@ -13,10 +13,7 @@ fn create_sexp_from_file(filename: String) -> sexp::Sexp {
     let tokens: Vec<lex::Token> = lex::extract_tokens(text);
     // println!("tokens {tokens:#?}");
 
-    let sexp = sexp::create_sexp(tokens);
-    // println!("sexp {sexp:#?}");
-
-    sexp
+    sexp::create_sexp(tokens)
 }
 
 fn main() {

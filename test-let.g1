@@ -1,47 +1,168 @@
 (progn
-
-  ;; let with no statements should eval into nil
-  (equal (let ((a 1) (b 2)))
-	 nil)
-
-  ;; simple let
-  (equal (let ((a 1) (b 2))
-	   (+ a b))
-	 3)
+  (and
 
 
-  ;; nested let, shadowing
-  (equal (let ((a 1) (b 2))
-	   (let ((a 3) (b 4))
-	     (+ a b)))
-	 7)
+   ;; let with no statements should eval into nil
+   (equal (let ((a 1) (b 2)))
+	  nil)
+
+   ;; simple let
+   (equal (let ((a 1) (b 2))
+	    (+ a b))
+	  3)
 
 
-  ;; let should not leak variables
-  (equal
-   (progn
-
-     ;; This should have no side effects
-     (let ((a 1) (b 2)))
-
-     (setq a 4)
-     (setq b 4)
-
-     (+ a b))
-   8)
-
-  ;; let should not leak variables
-  (equal
-   (progn
-
-     (setq a 4)
-     (setq b 4)
-
-     ;; This should have no side effects
-     (let ((a 1) (b 2)))
-
-     (+ a b))
-   8)
+   ;; nested let, shadowing
+   (equal (let ((a 1) (b 2))
+	    (let ((a 3) (b 4))
+	      (+ a b)))
+	  7)
 
 
-  )
+   ;; let should not leak variables
+   (equal
+    (progn
+
+      ;; This should have no side effects
+      (let ((a 1) (b 2)))
+
+      (setq a 4)
+      (setq b 4)
+
+      (+ a b))
+    8)
+
+   ;; let should not leak variables (set version)
+   (equal
+    (progn
+
+      ;; This should have no side effects
+      (let ((a 1) (b 2)))
+
+      (set 'a 4)
+      (set 'b 4)
+
+      (+ a b))
+    8)
+
+
+   ;; let should not leak variables
+   (equal
+    (progn
+
+      (setq a 4)
+      (setq b 4)
+
+      ;; This should have no side effects
+      (let ((a 1) (b 2)))
+
+      (+ a b))
+    8)
+
+   ;; let should not leak variables (set version)
+   (equal
+    (progn
+
+      (set 'a 4)
+      (set 'b 4)
+
+      ;; This should have no side effects
+      (let ((a 1) (b 2)))
+
+      (+ a b))
+    8)
+
+
+   ;; let variables should shadow the global ones
+   (equal
+    (progn
+
+      (setq a 4)
+      (setq b 4)
+
+      (let ((a 1) (b 3))
+	(+ a b)
+
+	)
+
+      )
+    4)
+
+
+   ;; let variables should shadow the global ones (set version)
+   (equal
+    (progn
+
+      (set 'a 4)
+      (set 'b 4)
+
+      (let ((a 1) (b 3))
+	(+ a b)
+
+	)
+
+      )
+    4)
+
+
+   ;; setq should modify to local variables
+   (equal
+    (progn
+
+      (setq a 4)
+      (setq b 4)
+
+      (let ((a 1) (b 3))
+	(setq a 2)
+	(+ a b)
+
+	)
+      )
+    5)
+
+   ;; set should modify to local variables
+   (equal
+    (progn
+
+      (setq a 4)
+      (setq b 4)
+
+      (let ((a 1) (b 3))
+	(set 'a 2)
+	(+ a b)
+
+	)
+      )
+    5)
+
+
+   ;; setq from within let should be able to create global vars
+   (equal
+    (progn
+
+      (let ((a 1) (b 3))
+	(setq c 42)
+	(+ a b)
+
+	)
+
+      (+ c 1)
+
+      )
+    43)
+
+
+   ;; set from within let should be able to create global vars
+   (equal
+    (progn
+
+      (let ((a 1) (b 3))
+	(set 'c 42)
+	(+ a b))
+
+      (+ c 1)
+
+      )
+    43)
+
+   ))

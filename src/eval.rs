@@ -29,17 +29,18 @@ fn get_from_fn_map_or_global(
     g_map: &HashMap<String, Sexp>,
     fn_map: &[HashMap<String, Sexp>],
 ) -> Option<Sexp> {
-    // Check the global map first
-    match g_map.get(var_name) {
-        Some(sexp) => return Some(sexp.to_owned()),
-        None => {
-            // Check the function maps now
-            for var in fn_map.iter().rev() {
-                if let Some(sexp) = var.get(var_name) {
-                    return Some(sexp.to_owned());
-                }
-            }
+    // TODO: this is actually quite inefficient, because if we are in a deep nested function, and we want to access a global var, we have to iterate through all the fn_maps first.
+
+    // Check the functions map first
+    for var in fn_map.iter().rev() {
+        if let Some(sexp) = var.get(var_name) {
+            return Some(sexp.to_owned());
         }
+    }
+
+    // Check the global map last.
+    if let Some(sexp) = g_map.get(var_name) {
+        return Some(sexp.to_owned());
     }
 
     None
@@ -253,6 +254,15 @@ pub(crate) fn eval_sexp_internal(
                                     Sexp::Atom(Atom::Sym(s)) => {
                                         let new_value = eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
 
+                                        // Let's see if the symbol exists in local scope first
+                                        for f in fn_map.iter_mut() {
+                                            if let Some(_) = f.get(&s) {
+                                                f.insert(s, new_value.clone());
+
+                                                return new_value;
+                                            }
+                                        }
+
                                         g_map.insert(s, new_value.clone());
 
                                         return new_value;
@@ -264,12 +274,21 @@ pub(crate) fn eval_sexp_internal(
                                     Sexp::Atom(Atom::Sym(s)) => {
                                         let new_value = eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
 
+                                        // Let's see if the symbol exists in local scope first
+                                        for f in fn_map.iter_mut() {
+                                            if let Some(_) = f.get(&s) {
+                                                f.insert(s, new_value.clone());
+
+                                                return new_value;
+                                            }
+                                        }
+
                                         g_map.insert(s, new_value.clone());
 
                                         return new_value;
                                     }
                                     _ => {
-                                        panic!("a");
+                                        panic!("setq expects a symbol");
                                     }
                                 }
                             } else if s == "if" {
