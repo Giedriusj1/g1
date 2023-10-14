@@ -26,7 +26,22 @@
 
      (setq a 4)
      (setq b 4)
+
      (+ a b))
    8)
+
+  ;; let should not leak variables
+  (equal
+   (progn
+
+     (setq a 4)
+     (setq b 4)
+
+     ;; This should have no side effects
+     (let ((a 1) (b 2)))
+
+     (+ a b))
+   8)
+
 
   )
