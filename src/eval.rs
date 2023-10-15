@@ -4,21 +4,24 @@ use std::collections::HashMap;
 
 // Top level function that evaluates a sexp after evaluating the intrinsics
 pub(crate) fn eval_sexp(intrinsics_sexp: &Sexp, sexp: &Sexp) -> Sexp {
+    let mut macro_map: HashMap<String, Sexp> = HashMap::new();
+
     let mut global_map: HashMap<String, Sexp> = HashMap::new();
 
     let mut fn_map: Vec<HashMap<String, Sexp>> = vec![];
 
-    eval_sexp_internal(intrinsics_sexp, &mut global_map, &mut fn_map);
+    eval_sexp_internal(intrinsics_sexp, &mut macro_map, &mut global_map, &mut fn_map);
 
-    eval_sexp_internal(sexp, &mut global_map, &mut fn_map)
+    eval_sexp_internal(sexp, &mut macro_map, &mut global_map, &mut fn_map)
 }
 
 fn eval_sexp_expect_num(
     sexp: &Sexp,
+    macro_map: &mut HashMap<String, Sexp>,
     g_map: &mut HashMap<String, Sexp>,
     fn_map: &mut Vec<HashMap<String, Sexp>>,
 ) -> i32 {
-    match eval_sexp_internal(sexp, g_map, fn_map) {
+    match eval_sexp_internal(sexp, macro_map, g_map, fn_map) {
         Sexp::Atom(Atom::Num(d)) => d,
         _ => panic!("expected a number"),
     }
@@ -48,6 +51,7 @@ fn get_from_fn_map_or_global(
 
 pub(crate) fn eval_sexp_internal(
     sexp: &Sexp,
+    macro_map: &mut HashMap<String, Sexp>,
     g_map: &mut HashMap<String, Sexp>,
     fn_map: &mut Vec<HashMap<String, Sexp>>,
 ) -> Sexp {
@@ -89,7 +93,7 @@ pub(crate) fn eval_sexp_internal(
 
                                                     let v = l.get(1).unwrap().clone();
 
-                                                    let var_eval = eval_sexp_internal(&v, g_map, fn_map);
+                                                    let var_eval = eval_sexp_internal(&v, macro_map, g_map, fn_map);
 
                                                     current_function_param_map.insert(var_string.to_owned(), var_eval);
                                                 }
@@ -109,13 +113,13 @@ pub(crate) fn eval_sexp_internal(
                                     for (pos, statement) in statements {
                                         // println!("pos: {}, statement: {}", pos, statement);
                                         if pos + 1 == l.len() {
-                                            let r = eval_sexp_internal(statement, g_map, fn_map);
+                                            let r = eval_sexp_internal(statement, macro_map, g_map, fn_map);
 
                                             fn_map.pop();
 
                                             return r;
                                         } else {
-                                            eval_sexp_internal(statement, g_map, fn_map);
+                                            eval_sexp_internal(statement, macro_map, g_map, fn_map);
                                         }
                                     }
                                 } else {
@@ -124,7 +128,7 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "cdr" {
                                 assert_eq!(l.len(), 2);
-                                return match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
+                                return match eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map) {
                                     Sexp::Atom(_) => panic!("cdr needs a list"),
                                     Sexp::List(l) => {
                                         let mut vec = l.clone();
@@ -134,9 +138,9 @@ pub(crate) fn eval_sexp_internal(
                                 };
                             } else if s == "cons" {
                                 assert_eq!(l.len(), 3);
-                                let first = eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map);
+                                let first = eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map);
 
-                                match eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map) {
+                                match eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map) {
                                     Sexp::Atom(a) => return Sexp::List(vec![first, Sexp::Atom(a)]),
                                     Sexp::List(l) => {
                                         let mut vec = vec![first];
@@ -153,12 +157,12 @@ pub(crate) fn eval_sexp_internal(
                                 let mut vec = vec![];
 
                                 for sexp in l.iter().skip(1) {
-                                    vec.push(eval_sexp_internal(sexp, g_map, fn_map));
+                                    vec.push(eval_sexp_internal(sexp, macro_map, g_map, fn_map));
                                 }
 
                                 return Sexp::List(vec);
                             } else if s == "car" {
-                                match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
+                                match eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map) {
                                     Sexp::Atom(_) => todo!(),
                                     Sexp::List(l) => return l.get(0).unwrap().clone(),
                                 }
@@ -167,24 +171,24 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "eval" {
                                 let statement = l.get(1).unwrap();
                                 // println!("eval statement: {}", statement);
-                                let after_eval = eval_sexp_internal(statement, g_map, fn_map);
+                                let after_eval = eval_sexp_internal(statement, macro_map, g_map, fn_map);
                                 // println!("after eval: {}", after_eval);
 
-                                return eval_sexp_internal(&after_eval, g_map, fn_map);
+                                return eval_sexp_internal(&after_eval, macro_map, g_map, fn_map);
                             } else if s == "message" {
-                                println!("{}", eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map));
+                                println!("{}", eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map));
                                 return Sexp::Atom(Atom::True);
                             } else if s == "=" {
-                                if eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                    == eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                    == eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
                                     return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == "equal" {
-                                if eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map)
-                                    == eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map)
+                                if eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                    == eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
@@ -199,37 +203,39 @@ pub(crate) fn eval_sexp_internal(
 
                                 for (pos, statement) in l.iter().enumerate().skip(1) {
                                     if pos + 1 == l.len() {
-                                        return eval_sexp_internal(statement, g_map, fn_map);
-                                    } else if let Sexp::Atom(Atom::Nil) = eval_sexp_internal(statement, g_map, fn_map) {
+                                        return eval_sexp_internal(statement, macro_map, g_map, fn_map);
+                                    } else if let Sexp::Atom(Atom::Nil) =
+                                        eval_sexp_internal(statement, macro_map, g_map, fn_map)
+                                    {
                                         return Sexp::Atom(Atom::Nil);
                                     }
                                 }
                             } else if s == "-" {
                                 return Sexp::Atom(Atom::Num(
-                                    eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                        - eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                        - eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map),
                                 ));
                             } else if s == "+" {
                                 return Sexp::Atom(Atom::Num(
-                                    eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                        + eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                        + eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map),
                                 ));
                             } else if s == "*" {
                                 return Sexp::Atom(Atom::Num(
-                                    eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                        * eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                        * eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map),
                                 ));
                             } else if s == "<" {
-                                if eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                    < eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                    < eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
                                     return Sexp::Atom(Atom::Nil);
                                 }
                             } else if s == ">" {
-                                if eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                    > eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map)
+                                if eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                    > eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map)
                                 {
                                     return Sexp::Atom(Atom::True);
                                 } else {
@@ -237,22 +243,22 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "%" {
                                 return Sexp::Atom(Atom::Num(
-                                    eval_sexp_expect_num(l.get(1).unwrap(), g_map, fn_map)
-                                        % eval_sexp_expect_num(l.get(2).unwrap(), g_map, fn_map),
+                                    eval_sexp_expect_num(l.get(1).unwrap(), macro_map, g_map, fn_map)
+                                        % eval_sexp_expect_num(l.get(2).unwrap(), macro_map, g_map, fn_map),
                                 ));
                             } else if s == "progn" {
                                 // Skip the actual "progn", then eval all and return last
                                 for (pos, statement) in l.iter().enumerate().skip(1) {
                                     if pos + 1 == l.len() {
-                                        return eval_sexp_internal(statement, g_map, fn_map);
+                                        return eval_sexp_internal(statement, macro_map, g_map, fn_map);
                                     } else {
-                                        eval_sexp_internal(statement, g_map, fn_map);
+                                        eval_sexp_internal(statement, macro_map, g_map, fn_map);
                                     }
                                 }
                             } else if s == "set" {
-                                match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
+                                match eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map) {
                                     Sexp::Atom(Atom::Sym(s)) => {
-                                        let new_value = eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+                                        let new_value = eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map);
 
                                         // Let's see if the symbol exists in local scope first
                                         for f in fn_map.iter_mut() {
@@ -272,7 +278,7 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "setq" {
                                 match l.get(1).unwrap().clone() {
                                     Sexp::Atom(Atom::Sym(s)) => {
-                                        let new_value = eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+                                        let new_value = eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map);
 
                                         // Let's see if the symbol exists in local scope first
                                         for f in fn_map.iter_mut() {
@@ -293,28 +299,40 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             } else if s == "if" {
                                 // eval the conditional statement:
-                                match eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map) {
+                                match eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map) {
                                     Sexp::Atom(Atom::Nil) => match l.get(3) {
                                         // if false, eval the else statement
-                                        Some(sexp) => return eval_sexp_internal(sexp, g_map, fn_map),
+                                        Some(sexp) => return eval_sexp_internal(sexp, macro_map, g_map, fn_map),
                                         None => {
                                             return Sexp::Atom(Atom::Nil);
                                         }
                                     },
                                     _ => {
-                                        return eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+                                        return eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map);
                                     }
                                 }
                             } else if s == "or" {
-                                let first = eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map);
+                                let first = eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map);
 
                                 // if first evals to nil, return second
                                 if let Sexp::Atom(Atom::Nil) = first {
-                                    return eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+                                    return eval_sexp_internal(l.get(2).unwrap(), macro_map, g_map, fn_map);
                                 } else {
                                     return first;
                                 }
+                            } else if s == "defmacro" {
+                                println!("defmacro: {:#?}", l);
+                                return Sexp::Atom(Atom::Nil);
+                                // let first = eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map);
+
+                                // // if first evals to nil, return second
+                                // if let Sexp::Atom(Atom::Nil) = first {
+                                //     return eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
+                                // } else {
+                                //     return first;
+                                // }
                             }
+
                             match get_from_fn_map_or_global(s, g_map, fn_map) {
                                 Some(var) => {
                                     match var {
@@ -336,14 +354,15 @@ pub(crate) fn eval_sexp_internal(
 
                                                 let v = l.get(index + 1).unwrap().clone();
 
-                                                let var_eval = eval_sexp_internal(&v, g_map, fn_map);
+                                                let var_eval = eval_sexp_internal(&v, macro_map, g_map, fn_map);
 
                                                 current_function_param_map.insert(var_string.to_owned(), var_eval);
                                             }
 
                                             fn_map.push(current_function_param_map);
 
-                                            let ret = eval_sexp_internal(ourfn.get(1).unwrap(), g_map, fn_map);
+                                            let ret =
+                                                eval_sexp_internal(ourfn.get(1).unwrap(), macro_map, g_map, fn_map);
 
                                             fn_map.pop();
 
@@ -359,7 +378,7 @@ pub(crate) fn eval_sexp_internal(
                         Atom::Num(_) => panic!(),
                     },
                     Sexp::List(_) => {
-                        match eval_sexp_internal(l.get(0).unwrap(), g_map, fn_map) {
+                        match eval_sexp_internal(l.get(0).unwrap(), macro_map, g_map, fn_map) {
                             Sexp::Atom(a) => Sexp::Atom(a),
                             Sexp::List(ourfn) => {
                                 // We are evaluating a list, whose first element is a list
@@ -379,14 +398,14 @@ pub(crate) fn eval_sexp_internal(
 
                                     let v = l.get(index + 1).unwrap().clone();
 
-                                    let var_eval = eval_sexp_internal(&v, g_map, fn_map);
+                                    let var_eval = eval_sexp_internal(&v, macro_map, g_map, fn_map);
 
                                     current_function_param_map.insert(var_string.to_owned(), var_eval);
                                 }
 
                                 fn_map.push(current_function_param_map);
 
-                                let ret = eval_sexp_internal(ourfn.get(1).unwrap(), g_map, fn_map);
+                                let ret = eval_sexp_internal(ourfn.get(1).unwrap(), macro_map, g_map, fn_map);
 
                                 fn_map.pop();
 
