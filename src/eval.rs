@@ -262,7 +262,7 @@ pub(crate) fn eval_sexp_internal(
 
                                         // Let's see if the symbol exists in local scope first
                                         for f in fn_map.iter_mut() {
-                                            if let Some(_) = f.get(&s) {
+                                            if f.get(&s).is_some() {
                                                 f.insert(s, new_value.clone());
 
                                                 return new_value;
@@ -282,7 +282,7 @@ pub(crate) fn eval_sexp_internal(
 
                                         // Let's see if the symbol exists in local scope first
                                         for f in fn_map.iter_mut() {
-                                            if let Some(_) = f.get(&s) {
+                                            if f.get(&s).is_some() {
                                                 f.insert(s, new_value.clone());
 
                                                 return new_value;
@@ -297,6 +297,22 @@ pub(crate) fn eval_sexp_internal(
                                         panic!("setq expects a symbol");
                                     }
                                 }
+                            } else if s == "defmacro" {
+                                let macro_name = match l.get(1).unwrap() {
+                                    Sexp::Atom(Atom::Sym(s)) => s,
+                                    _ => panic!("defmacro expects a symbol"),
+                                };
+
+                                // println!("macro_name: {}", macro_name);
+                                // println!("defmacro: {:#?}", l);
+
+                                let macro_body = l.clone().into_iter().skip(2).collect::<Vec<Sexp>>();
+
+                                // println!("macro_body: {:#?}", macro_body);
+
+                                macro_map.insert(macro_name.clone(), Sexp::List(macro_body));
+
+                                return Sexp::Atom(Atom::Nil);
                             } else if s == "if" {
                                 // eval the conditional statement:
                                 match eval_sexp_internal(l.get(1).unwrap(), macro_map, g_map, fn_map) {
@@ -320,17 +336,21 @@ pub(crate) fn eval_sexp_internal(
                                 } else {
                                     return first;
                                 }
-                            } else if s == "defmacro" {
-                                println!("defmacro: {:#?}", l);
-                                return Sexp::Atom(Atom::Nil);
-                                // let first = eval_sexp_internal(l.get(1).unwrap(), g_map, fn_map);
+                            }
 
-                                // // if first evals to nil, return second
-                                // if let Sexp::Atom(Atom::Nil) = first {
-                                //     return eval_sexp_internal(l.get(2).unwrap(), g_map, fn_map);
-                                // } else {
-                                //     return first;
-                                // }
+                            // check macros
+                            if let Some(macros) = macro_map.get(s) {
+                                println!("FOUND MACRO: {:#?}", macros);
+                                match macros{
+                                    Sexp::Atom(_) => todo!(),
+                                    Sexp::List(macro_list) => {
+
+                                        println!("macro_list: {:#?}", macro_list);
+                                        
+                                    },
+                                }
+                                
+                                return Sexp::Atom(Atom::Nil);
                             }
 
                             match get_from_fn_map_or_global(s, g_map, fn_map) {
