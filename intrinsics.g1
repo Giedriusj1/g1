@@ -1,46 +1,42 @@
 ;; This file is loader before any other file.
 
 (progn
-  (set 'defun
-       '((name params body)
-	 (set name (list
-		    params
-		    body))))
 
-  (defun 'lambda '(params body)
-    '(list
-      params
-      body))
+  (defmacro defun
+      (name params body)
+    (set name (list
+	       params
+	       body)))
 
-  (defun 'loop '(iter body)
-    '(
-      (if (> iter 0)
+  (defun lambda (params body)
+    (list
+     params
+     body))
+
+  (defun loop (iter body)
+    (if (> iter 0)
+	(progn
+	  (eval body)
+	  (loop (- iter 1) body))))
+
+  (defun while (test body)
+    (if (eval test)
+	(progn
+	  (eval body)
+	  (while test body))))
+
+  ;; Currently behaves differently than the original, but it's a start.
+  (defun dotimes (bind body)
+    (progn
+
+      ;; Make sure the variable is available
+      (set (car bind) (car (cdr bind) ))
+
+      (if (> (car (cdr bind) ) 0)
 	  (progn
 	    (eval body)
-	    (loop (- iter 1) body)))))
-
-  (defun 'while '(test body)
-    '(if (eval test)
-	 (progn
-	   (eval body)
-	   (while test body))))
-
-  ;; (dotimes (bind 3)
-  ;;   (message (number-to-string bind))
-  ;;   )
-  ;; Currently behaves differently than the original, but it's a start.
-  (defun 'dotimes
-      '(bind body)
-    '(progn
-
-       ;; Make sure the variable is available
-       (set (car bind) (car (cdr bind) ))
-
-       (if (> (car (cdr bind) ) 0)
-	   (progn
-	     (eval body)
-	     (dotimes
-		 (list (car bind) (- (car (cdr bind) ) 1)) body)))))
+	    (dotimes
+		(list (car bind) (- (car (cdr bind) ) 1)) body)))))
 
 
   (defmacro when (condition action)
