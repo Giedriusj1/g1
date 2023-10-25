@@ -339,18 +339,37 @@ pub(crate) fn eval_sexp_internal(
                             }
 
                             // check macros
-                            if let Some(macros) = macro_map.get(s) {
-                                println!("FOUND MACRO: {:#?}", macros);
-                                match macros{
+                            if let Some(macros) = macro_map.clone().get(s) {
+                                match macros {
                                     Sexp::Atom(_) => todo!(),
                                     Sexp::List(macro_list) => {
+                                        let macro_params = match macro_list.get(0).unwrap() {
+                                            Sexp::List(l) => l,
+                                            _ => panic!("function params should be a list"),
+                                        };
 
-                                        println!("macro_list: {:#?}", macro_list);
-                                        
-                                    },
+                                        let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+                                        // Map variable names to values passed into the function
+                                        for (index, var) in macro_params.iter().enumerate() {
+                                            // println!("index {:#?}, var: {:#?}", index, var);
+
+                                            let var_name =
+                                                if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
+
+                                            current_function_param_map
+                                                .insert(var_name.to_owned(), l.get(index + 1).unwrap().clone());
+                                        }
+
+                                        fn_map.push(current_function_param_map);
+
+                                        let ret =
+                                            eval_sexp_internal(macro_list.get(1).unwrap(), macro_map, g_map, fn_map);
+
+                                        fn_map.pop();
+
+                                        return ret;
+                                    }
                                 }
-                                
-                                return Sexp::Atom(Atom::Nil);
                             }
 
                             match get_from_fn_map_or_global(s, g_map, fn_map) {

@@ -41,4 +41,11 @@
 	     (eval body)
 	     (dotimes
 		 (list (car bind) (- (car (cdr bind) ) 1)) body)))))
+
+
+  (defmacro when (condition action)
+    (if condition
+	(eval action)))
+
+
   )
