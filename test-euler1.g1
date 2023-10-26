@@ -5,33 +5,16 @@
 
   (setq sum 0)
 
-  ;; (defun euler-A (n)
-  ;;   (if (< n 1)
-  ;; 	;; Last element, so return the sum
-  ;; 	sum
+  (defun eulerFn (n)
+    (if (< n 1)
+	;; Last element, so return the sum
+	sum
 
-  ;;     (progn
-  ;; 	(if (or (= (% n 3) 0) (= (% n 5) 0))
-  ;; 	    (setq sum (+ sum n)))
+      (progn
+	(if (or (= (% n 3) 0) (= (% n 5) 0))
+	    (setq sum (+ sum n)))
 
-  ;; 	(euler-A (- n 1)))))
-
-
-  (setq eulerFn
-	(quote ((n)
-		(if (< n 1)
-		    ;; Last element, so return the sum
-		    sum
-
-		  (progn
-		    (if (or (= (% n 3) 0) (= (% n 5) 0))
-			(setq sum (+ sum n)))
-
-		    (eulerFn (- n 1))))))
-
-	)
-
-
+	(eulerFn (- n 1)))))
 
   ;; check result
-  (= 234168  (eulerFn 1000)))
+  (= 234168 (eulerFn 1000)))
