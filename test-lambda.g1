@@ -1,4 +1,4 @@
-(progn
+(and
   (equal ((lambda '(a) '(+ a 1))
 	  12)
 

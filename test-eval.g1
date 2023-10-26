@@ -1,17 +1,12 @@
-(progn
+(and
+ (equal (eval 1) 1)
 
-  (and
+ (equal (eval '(+ 1 2) ) 3)
+ (equal (eval '(+ (+ 1 2) 3 )) 6)
 
-   (equal (eval 1) 1)
+ (setq x 12)
+ (equal (eval x) 12)
 
-   (equal (eval '(+ 1 2) ) 3)
-   (equal (eval '(+ (+ 1 2) 3 )) 6)
-
-   (setq x 12)
-   (equal (eval x) 12)
-
-   (setq x '(+ 1 2))
-   (equal (eval x) 3)
-
-   )
-  )
+ (setq x '(+ 1 2))
+ (equal (eval x) 3)
+ )

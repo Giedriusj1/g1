@@ -1,4 +1,4 @@
-(progn
+(and
 
   ;; quote simple atoms
   (equal (quote 1) (quote 1) )
@@ -6,7 +6,6 @@
   (equal 'a (quote a))
   (equal '1 (quote 1))
   (equal '1 '1)
-
 
   ;; quote a list
   (equal '(a b c) '(a b c))
@@ -32,7 +31,6 @@
   (equal ''a (quote (quote a)))
 
   (equal '''''a (quote(quote(quote (quote (quote a))))))
-
 
   (equal '''''a  '''''a)
   )
