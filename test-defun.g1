@@ -1,16 +1,12 @@
-(progn
-  (and
+(and
 
-   (defun testFunction (a) (* a 20))
+ (defun testFunction (a) (* a 20))
+ (equal (testFunction 8) 160)
 
-   (equal (testFunction 8) 160)
+ (defun testFunctionTwoParams (a b) (+ a b))
+ (equal (testFunctionTwoParams 1 11) 12)
 
 
-
-   (defun testFunctionTwoParams (a b) (+ a b))
-
-   (equal (testFunctionTwoParams 1 11) 12)
-
-   )
-
-  )
+ (defun testFunctionTwoParamsEvalParams (a b) (+ a b))
+ (equal (testFunctionTwoParamsEvalParams (+ 1 1) (+ 10 1)) 13)
+ )
