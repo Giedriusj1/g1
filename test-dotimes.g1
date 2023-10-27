@@ -2,9 +2,8 @@
 
   (setq counter 0)
 
-  ;; Should execute with 3 2 1
-  ;;TODO: the original would do 0 1 2
-  (dotimes (a 3)
+  ;; Should execute with 0 1 2 3
+  (dotimes (a 4)
     (progn
       (setq counter (+ counter a))))
 
