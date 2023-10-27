@@ -1,17 +1,16 @@
 (and
-  (equal ((lambda '(a) '(+ a 1))
+  (equal ((lambda (a) (+ a 1))
 	  12)
 
 	 13)
 
-  (equal ((lambda '(a b)
-	    '(+ a b ))
+  (equal ((lambda (a b)
+	    (+ a b ))
 	  1 3)
 	 4)
 
-  (equal ((lambda '(a b c)
-	    '(+ (+ a b ) c))
+  (equal ((lambda (a b c)
+	    (+ (+ a b ) c))
 	  1 2 3)
 	 6)
-
   )

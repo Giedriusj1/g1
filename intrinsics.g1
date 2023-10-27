@@ -8,7 +8,7 @@
 	       params
 	       body)))
 
-  (defun lambda (params body)
+  (defmacro lambda (params body)
     (list
      params
      body))
