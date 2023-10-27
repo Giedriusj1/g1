@@ -22,8 +22,14 @@ fn eval_sexp_expect_num(
     fn_map: &mut Vec<HashMap<String, Sexp>>,
 ) -> i32 {
     match eval_sexp_internal(sexp, macro_map, g_map, fn_map) {
-        Sexp::Atom(Atom::Num(d)) => d,
-        _ => panic!("expected a number"),
+        Sexp::Atom(atom) => match atom {
+            Atom::Num(n) => n,
+            Atom::Nil => panic!("expected a number, got nil"),
+            Atom::True => panic!("expected a number, got true"),
+
+            Atom::Sym(s) => panic!("expected a number, got symbol: {}", s),
+        },
+        Sexp::List(l) => panic!("expected a number, got a list: {:#?}", l),
     }
 }
 
