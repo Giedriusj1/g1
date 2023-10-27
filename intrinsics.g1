@@ -26,17 +26,18 @@
 	  (while test body))))
 
   ;; Currently behaves differently than the original, but it's a start.
-  (defun dotimes (bind body)
-    (progn
+  (defmacro dotimes (bind body)
+    (eval (list 'progn
+		(list 'let (list
+			    (list (car bind) (car (cdr bind))))
 
-      ;; Make sure the variable is available
-      (set (car bind) (car (cdr bind) ))
-
-      (if (> (car (cdr bind) ) 0)
-	  (progn
-	    (eval body)
-	    (dotimes
-		(list (car bind) (- (car (cdr bind) ) 1)) body)))))
+		      (list 'if (list '> (car (cdr bind)) 0)
+			    (list 'progn
+				  body
+				  (list 'dotimes
+					(list (car bind) (list '- (car (cdr bind)) 1))
+					body
+					)))))))
 
 
   (defmacro when (condition action)
