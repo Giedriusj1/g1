@@ -19,16 +19,19 @@
 	  (eval body)
 	  (loop (- iter 1) body))))
 
-  (defun while (test body)
-    (if (eval test)
-	(progn
-	  (eval body)
-	  (while test body))))
+  (defmacro while (test body)
+    (eval
+     (list 'if (eval test)
+	   (list 'progn
+		 body
+		 (list 'while test body)
+		 ))))
 
   ;; Currently behaves differently than the original, but it's a start.
   (defmacro dotimes (bind body)
     (eval (list 'progn
 		(list 'let (list
+			    ;; (list currentIteration 0)
 			    (list (car bind) (car (cdr bind))))
 
 		      (list 'if (list '> (car (cdr bind)) 0)
@@ -37,7 +40,9 @@
 				  (list 'dotimes
 					(list (car bind) (list '- (car (cdr bind)) 1))
 					body
-					)))))))
+					)))
+
+		      ))))
 
 
   (defmacro when (condition action)
