@@ -2,11 +2,9 @@
 
   (setq counter 0)
 
-  (equal (loop 100 '(progn
-		     (setq counter (+ counter 1))
-		     ))
+  (equal (loop 100 (progn
+		     ;; (message 'a)
+		     (setq counter (+ counter 1))))
 	 nil)
 
-  (equal counter 100)
-
-  )
+  (equal counter 100))
