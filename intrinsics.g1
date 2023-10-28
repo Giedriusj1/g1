@@ -2,16 +2,21 @@
 
 (progn
 
-  (defmacro defun
-      (name params body)
-    (set name (list
-	       params
-	       body)))
-
   (defmacro lambda (params body)
     (list
      params
-     body))
+     body)
+    )
+
+  (defmacro defun
+      (name params body)
+    (eval
+     (list 'setq name
+	   ;; TODO: why can't I do (lambda params body) directly here?
+	   ;; I think it's a bug ;(
+	   (list 'lambda
+		 params
+		 body))))
 
   (defun loop (iter body)
     (if (> iter 0)
