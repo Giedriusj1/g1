@@ -1,5 +1,5 @@
 ;;; -*- lexical-binding: t -*-
-(progn
+;; (progn
 
   ;; (defun g(a)
   ;;   (if (< a 1)
@@ -11,11 +11,15 @@
 
   ;; (g 3)
 
+(message 'aaa)
+
   (setq a 3)
 
-  (= 3 a)
+(= 3 4)
 
 
 
 
-  )
+
+
+  ;; )

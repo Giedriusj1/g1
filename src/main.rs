@@ -3,12 +3,20 @@ mod lex;
 mod sexp;
 
 fn create_sexp_from_file(filename: String) -> sexp::Sexp {
-    let text = std::fs::read_to_string(filename)
-        .unwrap()
-        .lines()
-        .filter(|&line| !line.trim().starts_with(";;"))
-        .collect::<Vec<_>>()
-        .join("\n");
+    // Wrap the file contents in a progn, so that we can evaluate multiple expressions
+    let mut text: String = "(progn ".to_string();
+
+    text.push_str(
+        std::fs::read_to_string(filename)
+            .unwrap()
+            .lines()
+            .filter(|&line| !line.trim().starts_with(";;"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            .as_str(),
+    );
+
+    text.push_str(")");
 
     let tokens: Vec<lex::Token> = lex::extract_tokens(text);
     // println!("tokens {tokens:#?}");
@@ -26,7 +34,7 @@ fn main() {
             // read parameter passed to the program
             let args: Vec<String> = std::env::args().collect();
 
-            let filename: String = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
+            let filename = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
 
             let intrinsics_sexp = create_sexp_from_file("./intrinsics.g1".to_string());
 

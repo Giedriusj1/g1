@@ -1,40 +1,36 @@
 ;; This file is loader before any other file.
 
-(progn
+(defmacro lambda (params body)
+  (list
+   params
+   body))
 
-  (defmacro lambda (params body)
-    (list
-     params
-     body))
+(defmacro defun
+    (name params body)
+  (eval
+   (list 'setq name
+	 (list 'lambda
+	       params
+	       body))))
 
-  (defmacro defun
-      (name params body)
-    (eval
-     (list 'setq name
-	   (list 'lambda
-		 params
-		 body))))
+(defmacro while (test body)
+  (eval
+   (list 'if (eval test)
+	 (list 'progn
+	       body
+	       (list 'while test body)))))
 
-  (defmacro while (test body)
-    (eval
-     (list 'if (eval test)
-	   (list 'progn
-		 body
-		 (list 'while test body)))))
+(defmacro dotimes (bind body)
+  (eval (list 'progn
+	      (list 'let (list (list (car bind) 0))
+		    (list 'while (list '< (car bind) (car (cdr bind)))
+			  (list 'progn
+				body
+				(list 'setq (car bind) (list '+ (car bind) 1))))))))
 
-  (defmacro dotimes (bind body)
-    (eval (list 'progn
-		(list 'let (list (list (car bind) 0))
-		      (list 'while (list '< (car bind) (car (cdr bind)))
-			    (list 'progn
-				  body
-				  (list 'setq (car bind) (list '+ (car bind) 1))))))))
+(defmacro loop (iter body)
+  (eval (list 'dotimes (list 'i iter) body)))
 
-  (defmacro loop (iter body)
-    (eval (list 'dotimes (list 'i iter) body)))
-
-  (defmacro when (condition action)
-    (if condition
-	(eval action)))
-
-  )
+(defmacro when (condition action)
+  (if condition
+      (eval action)))
