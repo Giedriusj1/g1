@@ -32,7 +32,15 @@ fn main() {
 
             let sexp = create_sexp_from_file(filename);
 
-            let eval = eval::eval_sexp(&intrinsics_sexp, &sexp);
+            // Create eval state struct
+            let mut eval_state = eval::EvalState::new();
+
+            // Evaluate intrinsics
+            // TODO: check results
+            eval::eval_sexp(&intrinsics_sexp, &mut eval_state);
+
+            let eval = eval::eval_sexp(&sexp, &mut eval_state);
+
             println!("eval to: {eval}");
 
             let end = std::time::Instant::now();
