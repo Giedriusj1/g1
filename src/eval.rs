@@ -306,7 +306,7 @@ pub(crate) fn eval_sexp_internal(
                             } else if s == "defmacro" {
                                 let macro_name = match l.get(1).unwrap() {
                                     Sexp::Atom(Atom::Sym(s)) => s,
-                                    _ => panic!("defmacro expects a symbol"),
+                                    _ => panic!("defmacro name should be a symbol"),
                                 };
 
                                 // println!("macro_name: {}", macro_name);
@@ -344,10 +344,9 @@ pub(crate) fn eval_sexp_internal(
                                 }
                             }
 
-                            // check macros
+                            // check if we have a macro with this name
                             if let Some(macros) = macro_map.clone().get(s) {
                                 match macros {
-                                    Sexp::Atom(_) => todo!(),
                                     Sexp::List(macro_list) => {
                                         let macro_params = match macro_list.get(0).unwrap() {
                                             Sexp::List(l) => l,
@@ -362,8 +361,9 @@ pub(crate) fn eval_sexp_internal(
                                             let var_name =
                                                 if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
 
-                                            current_function_param_map
-                                                .insert(var_name.to_owned(), l.get(index + 1).unwrap().clone());
+                                            let v = l.get(index + 1).unwrap().clone();
+
+                                            current_function_param_map.insert(var_name.to_owned(), v);
                                         }
 
                                         fn_map.push(current_function_param_map);
@@ -375,9 +375,11 @@ pub(crate) fn eval_sexp_internal(
 
                                         return ret;
                                     }
+                                    Sexp::Atom(_) => panic!("macro should be a list"),
                                 }
                             }
 
+                            // Not an intrinsic, or a macro.... could it be a variable?
                             match get_from_fn_map_or_global(s, g_map, fn_map) {
                                 Some(var) => {
                                     match var {
