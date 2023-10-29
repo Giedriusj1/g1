@@ -11,8 +11,6 @@
       (name params body)
     (eval
      (list 'setq name
-	   ;; TODO: why can't I do (lambda params body) directly here?
-	   ;; I think it's a bug ;(
 	   (list 'lambda
 		 params
 		 body))))
