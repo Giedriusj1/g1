@@ -4,6 +4,7 @@ pub(crate) enum Token {
     RightParen,
     Apostrophe,
     Backtick,
+    Comma,
     Digit(i32),
     String(String),
 }
@@ -122,6 +123,7 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
         move |x| extract_single_char(x, ')', Token::RightParen),
         move |x| extract_single_char(x, '\'', Token::Apostrophe),
         move |x| extract_single_char(x, '`', Token::Backtick),
+        move |x| extract_single_char(x, ',', Token::Comma),
         extract_number,
         extract_string,
     ];

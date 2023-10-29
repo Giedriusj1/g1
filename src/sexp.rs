@@ -60,7 +60,7 @@ impl std::fmt::Display for Sexp {
 }
 
 // This expands backticks into the quotation syntax
-fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
+fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
     let mut expanded_tokens: Vec<lex::Token> = vec![];
 
     // enumerate over tokens
@@ -74,11 +74,13 @@ fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
             continue;
         }
 
-        if let lex::Token::Apostrophe | lex::Token::Backtick = token {
+        if let lex::Token::Apostrophe | lex::Token::Backtick | lex::Token::Comma = token {
             if let lex::Token::Apostrophe = token {
                 apostrophe_or_backtick_vec.push(lex::Token::Apostrophe);
-            } else {
+            } else if let lex::Token::Backtick = token {
                 apostrophe_or_backtick_vec.push(lex::Token::Backtick);
+            } else if let lex::Token::Comma = token {
+                apostrophe_or_backtick_vec.push(lex::Token::Comma);
             }
 
             // peek into the next token
@@ -112,6 +114,10 @@ fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
                                         expanded_tokens.push(lex::Token::LeftParen);
                                         expanded_tokens.push(lex::Token::String("backtick".to_string()));
                                     }
+                                    lex::Token::Comma => {
+                                        expanded_tokens.push(lex::Token::LeftParen);
+                                        expanded_tokens.push(lex::Token::String("comma".to_string()));
+                                    }
                                     _ => {
                                         panic!("invalid syntax")
                                     }
@@ -132,7 +138,7 @@ fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
                         };
                     }
                 }
-                lex::Token::Backtick | lex::Token::Apostrophe => {
+                lex::Token::Comma | lex::Token::Backtick | lex::Token::Apostrophe => {
                     continue;
                 }
                 // If it's a symbol or a digit, then we need to wrap it in a quote
@@ -146,6 +152,10 @@ fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
                             lex::Token::Backtick => {
                                 expanded_tokens.push(lex::Token::LeftParen);
                                 expanded_tokens.push(lex::Token::String("backtick".to_string()));
+                            }
+                            lex::Token::Comma => {
+                                expanded_tokens.push(lex::Token::LeftParen);
+                                expanded_tokens.push(lex::Token::String("comma".to_string()));
                             }
                             _ => {
                                 panic!("invalid syntax")

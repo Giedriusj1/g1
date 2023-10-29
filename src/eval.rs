@@ -163,6 +163,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                 return l.get(1).unwrap().clone();
                             } else if s == "backtick" {
                                 return l.get(1).unwrap().clone();
+                            } else if s == "comma" {
+                                // behave as quote for now, but as some point we'll want to start evaluating
+                                return l.get(1).unwrap().clone();
                             } else if s == "eval" {
                                 let statement = l.get(1).unwrap();
                                 // println!("eval statement: {}", statement);
