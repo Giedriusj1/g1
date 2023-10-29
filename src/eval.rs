@@ -161,6 +161,8 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                 }
                             } else if s == "quote" {
                                 return l.get(1).unwrap().clone();
+                            } else if s == "backtick" {
+                                return l.get(1).unwrap().clone();
                             } else if s == "eval" {
                                 let statement = l.get(1).unwrap();
                                 // println!("eval statement: {}", statement);

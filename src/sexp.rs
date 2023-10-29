@@ -59,20 +59,27 @@ impl std::fmt::Display for Sexp {
     }
 }
 
-fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
+// This expands backticks into the quotation syntax
+fn expand_special_characters(tokens: &Vec<lex::Token>) -> Vec<lex::Token> {
     let mut expanded_tokens: Vec<lex::Token> = vec![];
 
     // enumerate over tokens
     let mut skip = 0;
-    let mut found_apostrophes = 0;
+
+    let mut apostrophe_or_backtick_vec: Vec<lex::Token> = vec![];
+
     for (index, token) in tokens.iter().enumerate() {
         if skip > 0 {
             skip -= 1;
             continue;
         }
 
-        if let lex::Token::Apostrophe = token {
-            found_apostrophes += 1;
+        if let lex::Token::Apostrophe | lex::Token::Backtick = token {
+            if let lex::Token::Apostrophe = token {
+                apostrophe_or_backtick_vec.push(lex::Token::Apostrophe);
+            } else {
+                apostrophe_or_backtick_vec.push(lex::Token::Backtick);
+            }
 
             // peek into the next token
             let next_token = tokens.get(index + 1).unwrap();
@@ -95,41 +102,67 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
 
                             let slice = &tokens[index + 1..index + skip + 2].to_vec().clone();
 
-                            for _ in 0..found_apostrophes {
-                                expanded_tokens.push(lex::Token::LeftParen);
-                                expanded_tokens.push(lex::Token::String("quote".to_string()));
+                            for i in apostrophe_or_backtick_vec.iter() {
+                                match i {
+                                    lex::Token::Apostrophe => {
+                                        expanded_tokens.push(lex::Token::LeftParen);
+                                        expanded_tokens.push(lex::Token::String("quote".to_string()));
+                                    }
+                                    lex::Token::Backtick => {
+                                        expanded_tokens.push(lex::Token::LeftParen);
+                                        expanded_tokens.push(lex::Token::String("backtick".to_string()));
+                                    }
+                                    _ => {
+                                        panic!("invalid syntax")
+                                    }
+                                }
                             }
 
-                            let mut expanded = expand_quote(slice.clone());
+                            let mut expanded = expand_special_characters(slice);
 
                             expanded_tokens.append(&mut expanded);
 
-                            for _ in 0..found_apostrophes {
+                            for _ in apostrophe_or_backtick_vec.iter() {
                                 expanded_tokens.push(lex::Token::RightParen);
                             }
-                            found_apostrophes = 0;
+
+                            apostrophe_or_backtick_vec = vec![];
                             skip += 1;
                             break;
                         };
                     }
                 }
-                lex::Token::Apostrophe => {
+                lex::Token::Backtick | lex::Token::Apostrophe => {
                     continue;
                 }
                 // If it's a symbol or a digit, then we need to wrap it in a quote
                 lex::Token::String(_) | lex::Token::Digit(_) => {
-                    for _ in 0..found_apostrophes {
-                        expanded_tokens.push(lex::Token::LeftParen);
-                        expanded_tokens.push(lex::Token::String("quote".to_string()));
+                    for i in apostrophe_or_backtick_vec.iter() {
+                        match i {
+                            lex::Token::Apostrophe => {
+                                expanded_tokens.push(lex::Token::LeftParen);
+                                expanded_tokens.push(lex::Token::String("quote".to_string()));
+                            }
+                            lex::Token::Backtick => {
+                                expanded_tokens.push(lex::Token::LeftParen);
+                                expanded_tokens.push(lex::Token::String("backtick".to_string()));
+                            }
+                            _ => {
+                                panic!("invalid syntax")
+                            }
+                        }
                     }
 
                     expanded_tokens.push(next_token.clone());
 
-                    for _ in 0..found_apostrophes {
+                    for _ in apostrophe_or_backtick_vec.iter() {
                         expanded_tokens.push(lex::Token::RightParen);
                     }
                     skip = 1;
-                    found_apostrophes = 0;
+                    // found_apostrophes = 0;
+
+                    apostrophe_or_backtick_vec = vec![];
+
                     continue;
                 }
                 lex::Token::RightParen => panic!("invalid syntax"),
@@ -145,8 +178,8 @@ fn expand_quote(tokens: Vec<lex::Token>) -> Vec<lex::Token> {
 }
 
 pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
-    // Deal with apostrophes by expanding them into the quotation syntax
-    let tokens = expand_quote(tokens);
+    // Expand backticks and apostrophes into the quotation syntax
+    let tokens = expand_special_characters(&tokens);
 
     let mut sexp_stack: Vec<Vec<Sexp>> = vec![];
 
