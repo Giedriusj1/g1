@@ -45,6 +45,41 @@ fn get_from_fn_map_or_global(var_name: &String, eval_state: &EvalState) -> Optio
     None
 }
 
+fn execute_function(fnbody: Vec<Sexp>, fncall: &Vec<Sexp>, eval_state: &mut EvalState) -> Sexp {
+    // ourfn is the function body. fncall is a list containing the function name, and the arguments to the function.
+    // for example: ((a b) (+ a b))
+
+    // fncall is a list containing the function name, and the arguments to the function
+    // (add 2 3)
+
+    let fnparams = match fnbody.get(0).unwrap() {
+        Sexp::List(l) => l,
+        _ => panic!("function params should be a list"),
+    };
+
+    let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+    // Map variable names to values passed into the function
+    for (index, var) in fnparams.iter().enumerate() {
+        // println!("index {:#?}, var: {:#?}", index, var);
+
+        let var_string = if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
+
+        let v = fncall.get(index + 1).unwrap().clone();
+
+        let var_eval = eval_sexp(&v, eval_state);
+
+        current_function_param_map.insert(var_string.to_owned(), var_eval);
+    }
+
+    eval_state.fn_map.push(current_function_param_map);
+
+    let ret = eval_sexp(fnbody.get(1).unwrap(), eval_state);
+
+    eval_state.fn_map.pop();
+
+    ret
+}
+
 pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
     match sexp {
         Sexp::Atom(a) => match a {
@@ -399,42 +434,13 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
 
                                 // Not an intrinsic, or a macro.... could it be a variable?
                                 match get_from_fn_map_or_global(s, eval_state) {
-                                    Some(var) => {
-                                        match var {
-                                            Sexp::Atom(a) => Sexp::Atom(a),
+                                    Some(var) => match var {
+                                        Sexp::Atom(a) => Sexp::Atom(a),
 
-                                            Sexp::List(ourfn) => {
-                                                let fnparams = match ourfn.get(0).unwrap() {
-                                                    Sexp::List(l) => l,
-                                                    _ => panic!("function params should be a list"),
-                                                };
-
-                                                let mut current_function_param_map: HashMap<String, Sexp> =
-                                                    HashMap::new();
-                                                // Map variable names to values passed into the function
-                                                for (index, var) in fnparams.iter().enumerate() {
-                                                    // println!("index {:#?}, var: {:#?}", index, var);
-
-                                                    let var_string =
-                                                        if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
-
-                                                    let v = l.get(index + 1).unwrap().clone();
-
-                                                    let var_eval = eval_sexp(&v, eval_state);
-
-                                                    current_function_param_map.insert(var_string.to_owned(), var_eval);
-                                                }
-
-                                                eval_state.fn_map.push(current_function_param_map);
-
-                                                let ret = eval_sexp(ourfn.get(1).unwrap(), eval_state);
-
-                                                eval_state.fn_map.pop();
-
-                                                ret
-                                            }
+                                        Sexp::List(ourfn) => {
+                                            return execute_function(ourfn, l, eval_state);
                                         }
-                                    }
+                                    },
                                     None => panic!("unrecognized symbol: {s}"),
                                 }
                             }
@@ -443,39 +449,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                             // We are evaluating a list, whose first element is a list
                             // This must be a function call!
 
-                            // TODO: There is some (code) duplication with the function call above. Maybe move it to a separate fn?
-
                             // TODO: do we need to do another l.get() here? Maybe we could just use the ref from match?
                             match eval_sexp(l.get(0).unwrap(), eval_state) {
                                 Sexp::Atom(a) => Sexp::Atom(a),
                                 Sexp::List(ourfn) => {
-                                    let fnparams = match ourfn.get(0).unwrap() {
-                                        Sexp::List(l) => l,
-                                        _ => panic!("function params should be a list"),
-                                    };
-
-                                    let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
-                                    // Map variable names to values passed into the function
-                                    for (index, var) in fnparams.iter().enumerate() {
-                                        // println!("index {:#?}, var: {:#?}", index, var);
-
-                                        let var_string =
-                                            if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
-
-                                        let v = l.get(index + 1).unwrap().clone();
-
-                                        let var_eval = eval_sexp(&v, eval_state);
-
-                                        current_function_param_map.insert(var_string.to_owned(), var_eval);
-                                    }
-
-                                    eval_state.fn_map.push(current_function_param_map);
-
-                                    let ret = eval_sexp(ourfn.get(1).unwrap(), eval_state);
-
-                                    eval_state.fn_map.pop();
-
-                                    ret
+                                    return execute_function(ourfn, l, eval_state);
                                 }
                             }
                         }
