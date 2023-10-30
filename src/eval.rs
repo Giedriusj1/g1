@@ -64,9 +64,7 @@ fn execute_function(fnbody: Vec<Sexp>, fncall: &Vec<Sexp>, eval_state: &mut Eval
 
         let var_string = if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
 
-        let v = fncall.get(index + 1).unwrap().clone();
-
-        let var_eval = eval_sexp(&v, eval_state);
+        let var_eval = eval_sexp(fncall.get(index + 1).unwrap(), eval_state);
 
         current_function_param_map.insert(var_string.to_owned(), var_eval);
     }
