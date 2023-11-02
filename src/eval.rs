@@ -45,7 +45,35 @@ fn get_from_fn_map_or_global(var_name: &String, eval_state: &EvalState) -> Optio
     None
 }
 
-fn execute_function(fnbody: Vec<Sexp>, fncall: &Vec<Sexp>, eval_state: &mut EvalState) -> Sexp {
+fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
+    // TODO: can we avoid cloning here?
+    match sexp {
+        Sexp::Atom(a) => Sexp::Atom(a.clone()),
+        Sexp::List(l) => {
+            let mut new_list: Vec<Sexp> = vec![];
+
+            for sexp in l.iter() {
+                if let Sexp::List(l) = sexp {
+                    if let Some(Sexp::Atom(Atom::Sym(s))) = l.get(0) {
+                        if s == "comma" {
+                            new_list.push(eval_sexp(l.get(1).unwrap(), eval_state));
+                        } else {
+                            new_list.push(eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state));
+                        }
+                    } else {
+                        new_list.push(eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state));
+                    }
+                } else {
+                    new_list.push(sexp.clone());
+                }
+            }
+
+            Sexp::List(new_list)
+        }
+    }
+}
+
+fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalState) -> Sexp {
     // ourfn is the function body. fncall is a list containing the function name, and the arguments to the function.
     // for example: ((a b) (+ a b))
 
@@ -204,7 +232,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         return l.get(1).unwrap().clone();
                                     }
                                     "backtick" => {
-                                        return l.get(1).unwrap().clone();
+                                        return eval_commas_within_backtick(l.get(1).unwrap(), eval_state);
                                     }
                                     "comma" => {
                                         // behave as quote for now, but as some point we'll want to start evaluating
@@ -435,9 +463,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                     Some(var) => match var {
                                         Sexp::Atom(a) => Sexp::Atom(a),
 
-                                        Sexp::List(ourfn) => {
-                                            return execute_function(ourfn, l, eval_state);
-                                        }
+                                        Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), eval_state),
                                     },
                                     None => panic!("unrecognized symbol: {s}"),
                                 }
@@ -450,9 +476,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                             // TODO: do we need to do another l.get() here? Maybe we could just use the ref from match?
                             match eval_sexp(l.get(0).unwrap(), eval_state) {
                                 Sexp::Atom(a) => Sexp::Atom(a),
-                                Sexp::List(ourfn) => {
-                                    return execute_function(ourfn, l, eval_state);
-                                }
+                                Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), eval_state),
                             }
                         }
                     }
