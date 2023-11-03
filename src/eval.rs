@@ -216,15 +216,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                     "list" => {
                                         if l.len() == 1 {
                                             return Sexp::Atom(Atom::Nil);
+                                        } else {
+                                            let vec: Vec<_> =
+                                                l.iter().skip(1).map(|sexp| eval_sexp(sexp, eval_state)).collect();
+                                            return Sexp::List(vec);
                                         }
-
-                                        let mut vec = vec![];
-
-                                        for sexp in l.iter().skip(1) {
-                                            vec.push(eval_sexp(sexp, eval_state));
-                                        }
-
-                                        return Sexp::List(vec);
                                     }
                                     "car" => match eval_sexp(l.get(1).unwrap(), eval_state) {
                                         Sexp::Atom(_) => todo!(),
