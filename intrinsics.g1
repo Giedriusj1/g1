@@ -1,8 +1,8 @@
 ;; This file is loader before any other file.
 
 (defmacro lambda (params body)
-  (list params
-	body))
+  `(,params
+    ,body))
 
 (defmacro defun
     (name params body)
