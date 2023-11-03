@@ -119,12 +119,12 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
         Sexp::List(l) => {
             match l.get(0) {
                 None => Sexp::Atom(Atom::Nil), // empty list evaluates to nil
-                Some(sexp) => {
-                    match sexp {
+                Some(first_elem_sexp) => {
+                    match first_elem_sexp {
                         Sexp::Atom(a) => match a {
                             Atom::Nil => Sexp::Atom(Atom::Nil),
                             Atom::True => Sexp::Atom(Atom::True),
-                            Atom::Num(_) => panic!(),
+                            Atom::Num(_) => panic!("don't know how to evaluate a list starting with a number"),
                             Atom::Sym(s) => {
                                 match s.as_str() {
                                     "let" => {
@@ -472,9 +472,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                         Sexp::List(_) => {
                             // We are evaluating a list, whose first element is a list
                             // This must be a function call!
-
-                            // TODO: do we need to do another l.get() here? Maybe we could just use the ref from match?
-                            match eval_sexp(l.get(0).unwrap(), eval_state) {
+                            match eval_sexp(first_elem_sexp, eval_state) {
                                 Sexp::Atom(a) => Sexp::Atom(a),
                                 Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), eval_state),
                             }
