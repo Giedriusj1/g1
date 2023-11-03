@@ -192,10 +192,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         assert_eq!(l.len(), 2);
                                         return match eval_sexp(l.get(1).unwrap(), eval_state) {
                                             Sexp::Atom(_) => panic!("cdr needs a list"),
-                                            Sexp::List(l) => {
-                                                let mut vec = l.clone();
-                                                vec.remove(0);
-                                                Sexp::List(vec)
+                                            Sexp::List(mut l) => {
+                                                l.remove(0);
+                                                Sexp::List(l)
                                             }
                                         };
                                     }
@@ -205,11 +204,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
 
                                         match eval_sexp(l.get(2).unwrap(), eval_state) {
                                             Sexp::Atom(a) => return Sexp::List(vec![first, Sexp::Atom(a)]),
-                                            Sexp::List(l) => {
-                                                let mut vec = vec![first];
-                                                vec.extend(l.clone());
-
-                                                return Sexp::List(vec);
+                                            Sexp::List(mut l) => {
+                                                l.insert(0, first);
+                                                return Sexp::List(l);
                                             }
                                         }
                                     }
@@ -217,9 +214,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         if l.len() == 1 {
                                             return Sexp::Atom(Atom::Nil);
                                         } else {
-                                            let vec: Vec<_> =
-                                                l.iter().skip(1).map(|sexp| eval_sexp(sexp, eval_state)).collect();
-                                            return Sexp::List(vec);
+                                            return Sexp::List(
+                                                l.iter().skip(1).map(|sexp| eval_sexp(sexp, eval_state)).collect(),
+                                            );
                                         }
                                     }
                                     "car" => match eval_sexp(l.get(1).unwrap(), eval_state) {
