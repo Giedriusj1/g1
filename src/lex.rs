@@ -97,6 +97,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                     || char == '='
                     || char == '*'
                     || char == '%'
+                    || char == '/'
                 {
                     letters.push(char);
                 } else {

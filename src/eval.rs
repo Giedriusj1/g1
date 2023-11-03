@@ -317,6 +317,12 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                 % eval_sexp_to_num(l.get(2).unwrap(), eval_state),
                                         ));
                                     }
+                                    "/" => {
+                                        return Sexp::Atom(Atom::Num(
+                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
+                                                / eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                        ));
+                                    }
                                     "progn" => {
                                         // Skip the actual "progn", then eval all and return last
                                         for (pos, statement) in l.iter().enumerate().skip(1) {
