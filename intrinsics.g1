@@ -1,5 +1,8 @@
 ;; This file is loader before any other file.
 
+(defmacro set (var val)
+  (eval `(setq ,(eval var) ,val)))
+
 (defmacro increment (var)
   (eval `(setq ,var (+ ,var 1))))
 

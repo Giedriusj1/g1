@@ -49,27 +49,25 @@ fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp 
     // TODO: can we avoid cloning here?
     match sexp {
         Sexp::Atom(a) => Sexp::Atom(a.clone()),
-        Sexp::List(l) => {
-            let mut new_list: Vec<Sexp> = vec![];
-
-            for sexp in l.iter() {
-                if let Sexp::List(l) = sexp {
-                    if let Some(Sexp::Atom(Atom::Sym(s))) = l.get(0) {
-                        if s == "comma" {
-                            new_list.push(eval_sexp(l.get(1).unwrap(), eval_state));
+        Sexp::List(l) => Sexp::List(
+            l.iter()
+                .map(|sexp| {
+                    if let Sexp::List(l) = sexp {
+                        if let Some(Sexp::Atom(Atom::Sym(s))) = l.get(0) {
+                            if s == "comma" {
+                                eval_sexp(l.get(1).unwrap(), eval_state)
+                            } else {
+                                eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state)
+                            }
                         } else {
-                            new_list.push(eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state));
+                            eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state)
                         }
                     } else {
-                        new_list.push(eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state));
+                        sexp.clone()
                     }
-                } else {
-                    new_list.push(sexp.clone());
-                }
-            }
-
-            Sexp::List(new_list)
-        }
+                })
+                .collect::<Vec<Sexp>>(),
+        ),
     }
 }
 
@@ -126,15 +124,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                 match s.as_str() {
                                     "let" => {
                                         // Let statement should bind variables for the duration of the let statement.
-                                        let param_list = l.get(1).unwrap();
-                                        // println!("param_list: {}", param_list);
-                                        match param_list {
+                                        match l.get(1).unwrap() {
                                             Sexp::Atom(a) => {
                                                 panic!("let expects a param list as a first argument, found {:#?}", a)
                                             }
                                             Sexp::List(l) => {
-                                                // println!("l: {:?}", l);
-
                                                 let mut current_function_param_map: HashMap<String, Sexp> =
                                                     HashMap::new();
 
@@ -169,7 +163,6 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
 
                                         if statements.len() > 0 {
                                             for (pos, statement) in statements {
-                                                // println!("pos: {}, statement: {}", pos, statement);
                                                 if pos + 1 == l.len() {
                                                     let r = eval_sexp(statement, eval_state);
 
@@ -227,8 +220,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         return eval_commas_within_backtick(l.get(1).unwrap(), eval_state);
                                     }
                                     "comma" => {
-                                        // behave as quote for now, but as some point we'll want to start evaluating
-                                        return l.get(1).unwrap().clone();
+                                        panic!("comma should only be used within backtick");
                                     }
                                     "eval" => {
                                         let statement = l.get(1).unwrap();
@@ -330,62 +322,34 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                             }
                                         }
                                     }
-                                    "set" => {
-                                        match eval_sexp(l.get(1).unwrap(), eval_state) {
-                                            Sexp::Atom(Atom::Sym(s)) => {
-                                                let new_value = eval_sexp(l.get(2).unwrap(), eval_state);
+                                    "setq" => match l.get(1).unwrap().clone() {
+                                        Sexp::Atom(Atom::Sym(s)) => {
+                                            let eval_value = eval_sexp(l.get(2).unwrap(), eval_state);
 
-                                                // Let's see if the symbol exists in local scope first
-                                                for f in eval_state.fn_map.iter_mut() {
-                                                    if f.get(&s).is_some() {
-                                                        f.insert(s, new_value.clone());
+                                            // Let's see if the symbol exists in local scope first
+                                            for f in eval_state.fn_map.iter_mut() {
+                                                if f.get(&s).is_some() {
+                                                    f.insert(s.clone(), eval_value.clone());
 
-                                                        return new_value;
-                                                    }
+                                                    return eval_value;
                                                 }
-
-                                                eval_state.global_map.insert(s, new_value.clone());
-
-                                                return new_value;
                                             }
-                                            _ => panic!("set expects a symbol"),
-                                        };
-                                    }
-                                    "setq" => {
-                                        match l.get(1).unwrap().clone() {
-                                            Sexp::Atom(Atom::Sym(s)) => {
-                                                let new_value = eval_sexp(l.get(2).unwrap(), eval_state);
 
-                                                // Let's see if the symbol exists in local scope first
-                                                for f in eval_state.fn_map.iter_mut() {
-                                                    if f.get(&s).is_some() {
-                                                        f.insert(s, new_value.clone());
+                                            eval_state.global_map.insert(s.clone(), eval_value.clone());
 
-                                                        return new_value;
-                                                    }
-                                                }
-
-                                                eval_state.global_map.insert(s, new_value.clone());
-
-                                                return new_value;
-                                            }
-                                            _ => {
-                                                panic!("setq expects a symbol");
-                                            }
+                                            return eval_value;
                                         }
-                                    }
+                                        _ => {
+                                            panic!("setq expects a symbol");
+                                        }
+                                    },
                                     "defmacro" => {
                                         let macro_name = match l.get(1).unwrap() {
                                             Sexp::Atom(Atom::Sym(s)) => s,
                                             _ => panic!("defmacro name should be a symbol"),
                                         };
 
-                                        // println!("macro_name: {}", macro_name);
-                                        // println!("defmacro: {:#?}", l);
-
                                         let macro_body = l.clone().into_iter().skip(2).collect::<Vec<Sexp>>();
-
-                                        // println!("macro_body: {:#?}", macro_body);
 
                                         eval_state.macro_map.insert(macro_name.clone(), Sexp::List(macro_body));
 
