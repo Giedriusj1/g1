@@ -399,14 +399,13 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                             let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
                                             // Map variable names to values passed into the function
                                             for (index, var) in macro_params.iter().enumerate() {
-                                                // println!("index {:#?}, var: {:#?}", index, var);
+                                                if let Sexp::Atom(Atom::Sym(var_name)) = var {
+                                                    let value = l.get(index + 1).unwrap().clone();
 
-                                                let var_name =
-                                                    if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
-
-                                                let v = l.get(index + 1).unwrap().clone();
-
-                                                current_function_param_map.insert(var_name.to_owned(), v);
+                                                    current_function_param_map.insert(var_name.to_owned(), value);
+                                                } else {
+                                                    panic!("macro param name should be a symbol")
+                                                };
                                             }
 
                                             eval_state.fn_map.push(current_function_param_map);
