@@ -1,0 +1,29 @@
+;; <p>The prime factors of $13195$ are $5, 7, 13$ and $29$.</p>
+;; <p>What is the largest prime factor of the number $600851475143$?</p>
+
+
+;;TODO: currently we are only checkcin up to 13195,
+;; we need to check up to 600851475143
+
+(equal
+ (let ((n 13195)
+       (currentlyChecking 2)
+       (primeFactors '()))
+
+   ;;TODO: this would be nicer if we had <=
+   (while (< currentlyChecking (+ n 1))
+     (progn
+
+       (if (equal (% n currentlyChecking) 0)
+	   (progn
+	     ;; (dbg currentlyChecking)
+	     (setq primeFactors (cons currentlyChecking primeFactors))
+	     (setq n (/ n currentlyChecking))
+	     (setq currentlyChecking 2))
+	 (increment currentlyChecking))))
+
+
+   (car primeFactors))
+
+ 29
+ )
