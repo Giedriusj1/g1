@@ -132,7 +132,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         let param_list = l.get(1).unwrap();
                                         // println!("param_list: {}", param_list);
                                         match param_list {
-                                            Sexp::Atom(_) => panic!("let expects a param list as a first argument"),
+                                            Sexp::Atom(a) => {
+                                                panic!("let expects a param list as a first argument, found {:#?}", a)
+                                            }
                                             Sexp::List(l) => {
                                                 // println!("l: {:?}", l);
 
@@ -141,21 +143,21 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
 
                                                 for var in l {
                                                     match var {
-                                                        Sexp::Atom(_) => {
-                                                            panic!("invalid let param list syntax")
+                                                        Sexp::Atom(a) => {
+                                                            panic!("let expect as list, but found {:#?}", a)
                                                         }
                                                         Sexp::List(l) => {
-                                                            let var_string: &String = match l.get(0).unwrap() {
-                                                                Sexp::Atom(Atom::Sym(s)) => s,
-                                                                _ => panic!(),
+                                                            match l.get(0).unwrap() {
+                                                                Sexp::Atom(Atom::Sym(let_var_name)) => {
+                                                                    let var = l.get(1).unwrap().clone();
+
+                                                                    let var_eval = eval_sexp(&var, eval_state);
+
+                                                                    current_function_param_map
+                                                                        .insert(let_var_name.to_owned(), var_eval);
+                                                                }
+                                                                _ => panic!("let is missing variable name"),
                                                             };
-
-                                                            let v = l.get(1).unwrap().clone();
-
-                                                            let var_eval = eval_sexp(&v, eval_state);
-
-                                                            current_function_param_map
-                                                                .insert(var_string.to_owned(), var_eval);
                                                         }
                                                     }
                                                 }
