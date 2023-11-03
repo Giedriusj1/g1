@@ -6,27 +6,23 @@
 
 (defmacro defun
     (name params body)
-  (eval
-   `(setq ,name
-	  (lambda
-	    ,params
-	    ,body))))
+  (eval `(setq ,name
+	       (lambda
+		 ,params
+		 ,body))))
 
 (defmacro while (test body)
-  (eval
-   `(if ,test
-	(progn
-	  ,body
-	  (while ,test ,body)))))
+  (eval `(if ,test
+	     (progn
+	       ,body
+	       (while ,test ,body)))))
 
 (defmacro dotimes (bind body)
-  (eval
-   (list 'let (list (list (car bind) 0))
-	 (list 'while (list '< (car bind) (car (cdr bind)))
-	       (list 'progn
-		     body
-		     (list 'setq (car bind) (list '+ (car bind) 1)))))))
-
+  (eval `(let ((,(car bind) 0))
+	   (while (< ,(car bind) ,(car (cdr bind)))
+	     (progn
+	       ,body
+	       (setq ,(car bind) (+ ,(car bind) 1)))))))
 
 (defmacro loop (iter body)
   (eval `(dotimes (i ,iter) ,body)))
