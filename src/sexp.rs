@@ -4,7 +4,7 @@ use crate::lex;
 pub(crate) enum Atom {
     Nil,         // ()
     True,        // #t
-    Num(i32),    // A digit
+    Num(i64),    // A digit
     Sym(String), // A symbol
 }
 
@@ -169,7 +169,6 @@ fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
                         expanded_tokens.push(lex::Token::RightParen);
                     }
                     skip = 1;
-                    // found_apostrophes = 0;
 
                     apostrophe_or_backtick_vec = vec![];
 

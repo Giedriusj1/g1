@@ -15,7 +15,7 @@ impl EvalState {
     }
 }
 
-fn eval_sexp_to_num(sexp: &Sexp, eval_state: &mut EvalState) -> i32 {
+fn eval_sexp_to_num(sexp: &Sexp, eval_state: &mut EvalState) -> i64 {
     let res = eval_sexp(sexp, eval_state);
 
     if let Sexp::Atom(Atom::Num(n)) = res {
@@ -85,19 +85,16 @@ fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalSta
         _ => panic!("function params should be a list"),
     };
 
-    let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+    let mut fn_param_map: HashMap<String, Sexp> = HashMap::new();
     // Map variable names to values passed into the function
     for (index, var) in fnparams.iter().enumerate() {
-        // println!("index {:#?}, var: {:#?}", index, var);
+        let name =
+            if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("function param name should be a symbol") };
 
-        let var_string = if let Sexp::Atom(Atom::Sym(s)) = var { s } else { panic!("") };
-
-        let var_eval = eval_sexp(fncall.get(index + 1).unwrap(), eval_state);
-
-        current_function_param_map.insert(var_string.to_owned(), var_eval);
+        fn_param_map.insert(name.to_owned(), eval_sexp(fncall.get(index + 1).unwrap(), eval_state));
     }
 
-    eval_state.fn_map.push(current_function_param_map);
+    eval_state.fn_map.push(fn_param_map);
 
     let ret = eval_sexp(fnbody.get(1).unwrap(), eval_state);
 

@@ -5,7 +5,7 @@ pub(crate) enum Token {
     Apostrophe,
     Backtick,
     Comma,
-    Digit(i32),
+    Digit(i64),
     String(String),
 }
 
@@ -65,7 +65,7 @@ fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
         }
     }
 
-    match digits.parse::<i32>() {
+    match digits.parse::<i64>() {
         Ok(n) => Some((Token::Digit(n), count)),
         Err(_) => None,
     }

@@ -9,4 +9,8 @@
 
  (setq x '(+ 1 2))
  (equal (eval x) 3)
+
+
+ (equal (eval '(/ 4 2)) 2)
+
  )
