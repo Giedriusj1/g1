@@ -33,3 +33,6 @@
 (defmacro when (condition action)
   (if condition
       (eval action)))
+
+(defmacro dbg (var)
+  (eval `(message (cons var ,var))))
