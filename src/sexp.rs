@@ -219,5 +219,5 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
         }
     }
 
-    current_sexp.get(0).unwrap().clone()
+    current_sexp.first().unwrap().clone()
 }

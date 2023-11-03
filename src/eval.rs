@@ -53,7 +53,7 @@ fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp 
             l.iter()
                 .map(|sexp| {
                     if let Sexp::List(l) = sexp {
-                        if let Some(Sexp::Atom(Atom::Sym(s))) = l.get(0) {
+                        if let Some(Sexp::Atom(Atom::Sym(s))) = l.first() {
                             if s == "comma" {
                                 eval_sexp(l.get(1).unwrap(), eval_state)
                             } else {
@@ -78,7 +78,7 @@ fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalSta
     // fncall is a list containing the function name, and the arguments to the function
     // (add 2 3)
 
-    let fnparams = match fnbody.get(0).unwrap() {
+    let fnparams = match fnbody.first().unwrap() {
         Sexp::List(l) => l,
         _ => panic!("function params should be a list"),
     };
@@ -112,7 +112,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
             _ => sexp.clone(),
         },
         Sexp::List(l) => {
-            match l.get(0) {
+            match l.first() {
                 None => Sexp::Atom(Atom::Nil), // empty list evaluates to nil
                 Some(first_elem_sexp) => {
                     match first_elem_sexp {
@@ -138,7 +138,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                             panic!("let expect as list, but found {:#?}", a)
                                                         }
                                                         Sexp::List(l) => {
-                                                            match l.get(0).unwrap() {
+                                                            match l.first().unwrap() {
                                                                 Sexp::Atom(Atom::Sym(let_var_name)) => {
                                                                     let var = l.get(1).unwrap().clone();
 
@@ -211,7 +211,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                     }
                                     "car" => match eval_sexp(l.get(1).unwrap(), eval_state) {
                                         Sexp::Atom(_) => todo!(),
-                                        Sexp::List(l) => return l.get(0).unwrap().clone(),
+                                        Sexp::List(l) => return l.first().unwrap().clone(),
                                     },
                                     "quote" => {
                                         return l.get(1).unwrap().clone();
@@ -391,7 +391,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         }
 
                                         Sexp::List(macro_list) => {
-                                            let macro_params = match macro_list.get(0).unwrap() {
+                                            let macro_params = match macro_list.first().unwrap() {
                                                 Sexp::List(l) => l,
                                                 _ => panic!("macro params should be a list"),
                                             };
