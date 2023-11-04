@@ -28,8 +28,12 @@ impl std::fmt::Display for Sexp {
             Sexp::List(l) => {
                 write!(f, "(")?;
 
-                for i in l {
-                    write!(f, "{} ", i)?;
+                for (index, i) in l.iter().enumerate() {
+                    if index == l.len() - 1 {
+                        write!(f, "{}", i)?;
+                    } else {
+                        write!(f, "{} ", i)?;
+                    }
                 }
                 write!(f, ")")?;
             }
