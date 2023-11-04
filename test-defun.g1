@@ -9,4 +9,10 @@
 
  (defun testFunctionTwoParamsEvalParams (a b) (+ a b))
  (equal (testFunctionTwoParamsEvalParams (+ 1 1) (+ 10 1)) 13)
+
+
+ ;; Test recursive function
+ (defun simpleRecursiveFunction (a) (if (> a 10) a (simpleRecursiveFunction (+ a 1))))
+ (equal (simpleRecursiveFunction 10)  11)
+
  )
