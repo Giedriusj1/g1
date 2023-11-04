@@ -101,10 +101,10 @@ fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalSta
     ret
 }
 
-pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
+pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
     match sexp {
         Sexp::Atom(a) => match a {
-            Atom::Sym(s) => match get_from_fn_map_or_global(s, eval_state) {
+            Atom::Sym(s) => match get_from_fn_map_or_global(s, state) {
                 Some(var) => var,
                 None => panic!("symbol {s} is not defined"),
             },
@@ -142,7 +142,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                                 Sexp::Atom(Atom::Sym(let_var_name)) => {
                                                                     let var = l.get(1).unwrap().clone();
 
-                                                                    let var_eval = eval_sexp(&var, eval_state);
+                                                                    let var_eval = eval_sexp(&var, state);
 
                                                                     current_function_param_map
                                                                         .insert(let_var_name.to_owned(), var_eval);
@@ -153,7 +153,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                     }
                                                 }
 
-                                                eval_state.fn_map.push(current_function_param_map);
+                                                state.fn_map.push(current_function_param_map);
                                             }
                                         }
 
@@ -164,24 +164,24 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         if statements.len() > 0 {
                                             for (pos, statement) in statements {
                                                 if pos + 1 == l.len() {
-                                                    let r = eval_sexp(statement, eval_state);
+                                                    let r = eval_sexp(statement, state);
 
-                                                    eval_state.fn_map.pop();
+                                                    state.fn_map.pop();
 
                                                     return r;
                                                 } else {
-                                                    eval_sexp(statement, eval_state);
+                                                    eval_sexp(statement, state);
                                                 }
                                             }
                                         } else {
-                                            eval_state.fn_map.pop();
+                                            state.fn_map.pop();
                                             return Sexp::Atom(Atom::Nil);
                                         }
                                     }
                                     "cdr" => {
                                         assert_eq!(l.len(), 2);
-                                        return match eval_sexp(l.get(1).unwrap(), eval_state) {
-                                            Sexp::Atom(_) => panic!("cdr needs a list"),
+                                        return match eval_sexp(l.get(1).unwrap(), state) {
+                                            Sexp::Atom(a) => panic!("cdr needs a list, found {:#?}", a),
                                             Sexp::List(mut l) => {
                                                 l.remove(0);
                                                 Sexp::List(l)
@@ -190,9 +190,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                     }
                                     "cons" => {
                                         assert_eq!(l.len(), 3);
-                                        let first = eval_sexp(l.get(1).unwrap(), eval_state);
+                                        let first = eval_sexp(l.get(1).unwrap(), state);
 
-                                        match eval_sexp(l.get(2).unwrap(), eval_state) {
+                                        match eval_sexp(l.get(2).unwrap(), state) {
                                             Sexp::Atom(a) => return Sexp::List(vec![first, Sexp::Atom(a)]),
                                             Sexp::List(mut l) => {
                                                 l.insert(0, first);
@@ -205,38 +205,33 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                             return Sexp::Atom(Atom::Nil);
                                         } else {
                                             return Sexp::List(
-                                                l.iter().skip(1).map(|sexp| eval_sexp(sexp, eval_state)).collect(),
+                                                l.iter().skip(1).map(|sexp| eval_sexp(sexp, state)).collect(),
                                             );
                                         }
                                     }
-                                    "car" => match eval_sexp(l.get(1).unwrap(), eval_state) {
-                                        Sexp::Atom(_) => todo!(),
+                                    "car" => match eval_sexp(l.get(1).unwrap(), state) {
+                                        Sexp::Atom(a) => panic!("car needs a list, found {:#?}", a),
                                         Sexp::List(l) => return l.first().unwrap().clone(),
                                     },
                                     "quote" => {
                                         return l.get(1).unwrap().clone();
                                     }
                                     "backtick" => {
-                                        return eval_commas_within_backtick(l.get(1).unwrap(), eval_state);
+                                        return eval_commas_within_backtick(l.get(1).unwrap(), state);
                                     }
                                     "comma" => {
                                         panic!("comma should only be used within backtick");
                                     }
                                     "eval" => {
-                                        let statement = l.get(1).unwrap();
-                                        // println!("eval statement: {}", statement);
-                                        let after_eval = eval_sexp(statement, eval_state);
-                                        // println!("after eval: {}", after_eval);
-
-                                        return eval_sexp(&after_eval, eval_state);
+                                        return eval_sexp(&eval_sexp(l.get(1).unwrap(), state), state);
                                     }
                                     "message" => {
-                                        println!("{}", eval_sexp(l.get(1).unwrap(), eval_state));
+                                        println!("{}", eval_sexp(l.get(1).unwrap(), state));
                                         return Sexp::Atom(Atom::True);
                                     }
                                     "=" => {
-                                        if eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                            == eval_sexp_to_num(l.get(2).unwrap(), eval_state)
+                                        if eval_sexp_to_num(l.get(1).unwrap(), state)
+                                            == eval_sexp_to_num(l.get(2).unwrap(), state)
                                         {
                                             return Sexp::Atom(Atom::True);
                                         } else {
@@ -244,9 +239,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         }
                                     }
                                     "equal" => {
-                                        if eval_sexp(l.get(1).unwrap(), eval_state)
-                                            == eval_sexp(l.get(2).unwrap(), eval_state)
-                                        {
+                                        if eval_sexp(l.get(1).unwrap(), state) == eval_sexp(l.get(2).unwrap(), state) {
                                             return Sexp::Atom(Atom::True);
                                         } else {
                                             return Sexp::Atom(Atom::Nil);
@@ -258,33 +251,33 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         // If no arg yields nil, return the last arg's value.
                                         for (pos, statement) in l.iter().enumerate().skip(1) {
                                             if pos + 1 == l.len() {
-                                                return eval_sexp(statement, eval_state);
-                                            } else if let Sexp::Atom(Atom::Nil) = eval_sexp(statement, eval_state) {
+                                                return eval_sexp(statement, state);
+                                            } else if let Sexp::Atom(Atom::Nil) = eval_sexp(statement, state) {
                                                 return Sexp::Atom(Atom::Nil);
                                             }
                                         }
                                     }
                                     "-" => {
                                         return Sexp::Atom(Atom::Num(
-                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                                - eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                            eval_sexp_to_num(l.get(1).unwrap(), state)
+                                                - eval_sexp_to_num(l.get(2).unwrap(), state),
                                         ));
                                     }
                                     "+" => {
                                         return Sexp::Atom(Atom::Num(
-                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                                + eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                            eval_sexp_to_num(l.get(1).unwrap(), state)
+                                                + eval_sexp_to_num(l.get(2).unwrap(), state),
                                         ));
                                     }
                                     "*" => {
                                         return Sexp::Atom(Atom::Num(
-                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                                * eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                            eval_sexp_to_num(l.get(1).unwrap(), state)
+                                                * eval_sexp_to_num(l.get(2).unwrap(), state),
                                         ));
                                     }
                                     "<" => {
-                                        if eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                            < eval_sexp_to_num(l.get(2).unwrap(), eval_state)
+                                        if eval_sexp_to_num(l.get(1).unwrap(), state)
+                                            < eval_sexp_to_num(l.get(2).unwrap(), state)
                                         {
                                             return Sexp::Atom(Atom::True);
                                         } else {
@@ -292,8 +285,8 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                         }
                                     }
                                     ">" => {
-                                        if eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                            > eval_sexp_to_num(l.get(2).unwrap(), eval_state)
+                                        if eval_sexp_to_num(l.get(1).unwrap(), state)
+                                            > eval_sexp_to_num(l.get(2).unwrap(), state)
                                         {
                                             return Sexp::Atom(Atom::True);
                                         } else {
@@ -302,32 +295,32 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                     }
                                     "%" => {
                                         return Sexp::Atom(Atom::Num(
-                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                                % eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                            eval_sexp_to_num(l.get(1).unwrap(), state)
+                                                % eval_sexp_to_num(l.get(2).unwrap(), state),
                                         ));
                                     }
                                     "/" => {
                                         return Sexp::Atom(Atom::Num(
-                                            eval_sexp_to_num(l.get(1).unwrap(), eval_state)
-                                                / eval_sexp_to_num(l.get(2).unwrap(), eval_state),
+                                            eval_sexp_to_num(l.get(1).unwrap(), state)
+                                                / eval_sexp_to_num(l.get(2).unwrap(), state),
                                         ));
                                     }
                                     "progn" => {
                                         // Skip the actual "progn", then eval all and return last
                                         for (pos, statement) in l.iter().enumerate().skip(1) {
                                             if pos + 1 == l.len() {
-                                                return eval_sexp(statement, eval_state);
+                                                return eval_sexp(statement, state);
                                             } else {
-                                                eval_sexp(statement, eval_state);
+                                                eval_sexp(statement, state);
                                             }
                                         }
                                     }
                                     "setq" => match l.get(1).unwrap().clone() {
                                         Sexp::Atom(Atom::Sym(s)) => {
-                                            let eval_value = eval_sexp(l.get(2).unwrap(), eval_state);
+                                            let eval_value = eval_sexp(l.get(2).unwrap(), state);
 
                                             // Let's see if the symbol exists in local scope first
-                                            for f in eval_state.fn_map.iter_mut() {
+                                            for f in state.fn_map.iter_mut() {
                                                 if f.get(&s).is_some() {
                                                     f.insert(s.clone(), eval_value.clone());
 
@@ -335,7 +328,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                 }
                                             }
 
-                                            eval_state.global_map.insert(s.clone(), eval_value.clone());
+                                            state.global_map.insert(s.clone(), eval_value.clone());
 
                                             return eval_value;
                                         }
@@ -351,31 +344,31 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
 
                                         let macro_body = l.clone().into_iter().skip(2).collect::<Vec<Sexp>>();
 
-                                        eval_state.macro_map.insert(macro_name.clone(), Sexp::List(macro_body));
+                                        state.macro_map.insert(macro_name.clone(), Sexp::List(macro_body));
 
                                         return Sexp::Atom(Atom::Nil);
                                     }
                                     "if" => {
                                         // eval the conditional statement:
-                                        match eval_sexp(l.get(1).unwrap(), eval_state) {
+                                        match eval_sexp(l.get(1).unwrap(), state) {
                                             Sexp::Atom(Atom::Nil) => match l.get(3) {
                                                 // if false, eval the else statement
-                                                Some(sexp) => return eval_sexp(sexp, eval_state),
+                                                Some(sexp) => return eval_sexp(sexp, state),
                                                 None => {
                                                     return Sexp::Atom(Atom::Nil);
                                                 }
                                             },
                                             _ => {
-                                                return eval_sexp(l.get(2).unwrap(), eval_state);
+                                                return eval_sexp(l.get(2).unwrap(), state);
                                             }
                                         }
                                     }
                                     "or" => {
-                                        let first = eval_sexp(l.get(1).unwrap(), eval_state);
+                                        let first = eval_sexp(l.get(1).unwrap(), state);
 
                                         // if first evals to nil, return second
                                         if let Sexp::Atom(Atom::Nil) = first {
-                                            return eval_sexp(l.get(2).unwrap(), eval_state);
+                                            return eval_sexp(l.get(2).unwrap(), state);
                                         } else {
                                             return first;
                                         }
@@ -384,7 +377,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                 }
 
                                 // check if we have a macro with this name
-                                if let Some(macros) = eval_state.macro_map.clone().get(s) {
+                                if let Some(macros) = state.macro_map.clone().get(s) {
                                     match macros {
                                         Sexp::Atom(a) => {
                                             panic!("macro should be a list, but found {:#?}", a)
@@ -408,11 +401,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                                 };
                                             }
 
-                                            eval_state.fn_map.push(current_function_param_map);
+                                            state.fn_map.push(current_function_param_map);
 
-                                            let ret = eval_sexp(macro_list.get(1).unwrap(), eval_state);
+                                            let ret = eval_sexp(macro_list.get(1).unwrap(), state);
 
-                                            eval_state.fn_map.pop();
+                                            state.fn_map.pop();
 
                                             return ret;
                                         }
@@ -420,11 +413,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                                 }
 
                                 // Not an intrinsic, or a macro.... could it be a variable?
-                                match get_from_fn_map_or_global(s, eval_state) {
+                                match get_from_fn_map_or_global(s, state) {
                                     Some(var) => match var {
                                         Sexp::Atom(a) => Sexp::Atom(a),
 
-                                        Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), eval_state),
+                                        Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), state),
                                     },
                                     None => panic!("unrecognized symbol: {s}"),
                                 }
@@ -433,9 +426,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
                         Sexp::List(_) => {
                             // We are evaluating a list, whose first element is a list
                             // This must be a function call!
-                            match eval_sexp(first_elem_sexp, eval_state) {
+                            match eval_sexp(first_elem_sexp, state) {
                                 Sexp::Atom(a) => Sexp::Atom(a),
-                                Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), eval_state),
+                                Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), state),
                             }
                         }
                     }
