@@ -2,25 +2,6 @@
 ;; <p>Find the sum of all the multiples of $3$ or $5$ below $1000$.</p>
 
 (and
-
- ;; solve with a recursive function
- (setq sum 0)
-
- (defun eulerFn (n)
-   (if (< n 1)
-       ;; Last element, so return the sum
-       sum
-
-     (progn
-       (if (or (= (% n 3) 0) (= (% n 5) 0))
-	   (setq sum (+ sum n)))
-
-       (eulerFn (- n 1)))))
- ;; check result
- (= 234168 (eulerFn 1000))
-
-
-
  ;; solve with a let and dotimes macro
  (= (let ((sum 0))
       (dotimes (n 1000)
