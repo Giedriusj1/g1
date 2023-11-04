@@ -320,9 +320,9 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         let eval_value = eval_sexp(l.get(2).unwrap(), state);
 
                                         // Let's see if the symbol exists in local scope first
-                                        for f in state.fn_map.iter_mut() {
-                                            if f.get(&s).is_some() {
-                                                f.insert(s.clone(), eval_value.clone());
+                                        for fn_map in state.fn_map.iter_mut() {
+                                            if fn_map.get(&s).is_some() {
+                                                fn_map.insert(s.clone(), eval_value.clone());
 
                                                 return eval_value;
                                             }
@@ -360,6 +360,23 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         },
                                         _ => {
                                             return eval_sexp(l.get(2).unwrap(), state);
+                                        }
+                                    }
+                                }
+                                "while" => {
+                                    // keep evaluating the body while the test is true
+                                    let test = l.get(1).unwrap();
+
+                                    let body = l.get(2).unwrap();
+
+                                    loop {
+                                        match eval_sexp(test, state) {
+                                            Sexp::Nil => {
+                                                return Sexp::Nil;
+                                            }
+                                            _ => {
+                                                eval_sexp(body, state);
+                                            }
                                         }
                                     }
                                 }

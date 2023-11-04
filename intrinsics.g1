@@ -17,12 +17,6 @@
 		 ,params
 		 ,body))))
 
-(defmacro while (test body)
-  (eval `(if ,test
-	     (progn
-	       ,body
-	       (while ,test ,body)))))
-
 (defmacro dotimes (bind body)
   (eval `(let ((,(car bind) 0))
 	   (while (< ,(car bind) ,(car (cdr bind)))
