@@ -46,11 +46,8 @@ impl std::fmt::Display for Sexp {
 // This expands backticks into the quotation syntax
 fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
     let mut expanded_tokens: Vec<lex::Token> = vec![];
-
-    // enumerate over tokens
-    let mut skip = 0;
-
     let mut apostrophe_or_backtick_vec: Vec<lex::Token> = vec![];
+    let mut skip = 0;
 
     for (index, token) in tokens.iter().enumerate() {
         if skip > 0 {
