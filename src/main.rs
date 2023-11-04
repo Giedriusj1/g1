@@ -25,36 +25,29 @@ fn create_sexp_from_file(filename: String) -> sexp::Sexp {
 }
 
 fn main() {
-    let child = std::thread::Builder::new()
-        .stack_size(512 * 1024 * 1024)
-        .spawn(move || {
-            // time how long it takes to run the program
-            let start = std::time::Instant::now();
+    // time how long it takes to run the program
+    let start = std::time::Instant::now();
 
-            // read parameter passed to the program
-            let args: Vec<String> = std::env::args().collect();
+    // read parameter passed to the program
+    let args: Vec<String> = std::env::args().collect();
 
-            let filename = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
+    let filename = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
 
-            let intrinsics_sexp = create_sexp_from_file("./intrinsics.g1".to_string());
+    let intrinsics_sexp = create_sexp_from_file("./intrinsics.g1".to_string());
 
-            let sexp = create_sexp_from_file(filename);
+    let sexp = create_sexp_from_file(filename);
 
-            // Create eval state struct
-            let mut eval_state = eval::EvalState::new();
+    // Create eval state struct
+    let mut eval_state = eval::EvalState::new();
 
-            // Evaluate intrinsics
-            // TODO: check results
-            eval::eval_sexp(&intrinsics_sexp, &mut eval_state);
+    // Evaluate intrinsics
+    // TODO: check results
+    eval::eval_sexp(&intrinsics_sexp, &mut eval_state);
 
-            let eval = eval::eval_sexp(&sexp, &mut eval_state);
+    let eval = eval::eval_sexp(&sexp, &mut eval_state);
 
-            println!("eval to: {eval}");
+    println!("eval to: {eval}");
 
-            let end = std::time::Instant::now();
-            println!("execution time: {:?}", end - start);
-        })
-        .unwrap();
-
-    child.join().unwrap();
+    let end = std::time::Instant::now();
+    println!("execution time: {:?}", end - start);
 }
