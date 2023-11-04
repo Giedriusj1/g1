@@ -1,37 +1,23 @@
 use crate::lex;
 
 #[derive(Clone, Debug)]
-pub(crate) enum Atom {
+pub(crate) enum Sexp {
+    List(Vec<Sexp>),
     Nil,         // ()
     True,        // #t
     Num(i64),    // A digit
     Sym(String), // A symbol
 }
 
-impl std::cmp::PartialEq for Atom {
+impl PartialEq for Sexp {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Atom::Nil, Atom::Nil) => true,
-            (Atom::True, Atom::True) => true,
-            (Atom::Num(d1), Atom::Num(d2)) => d1 == d2,
-            (Atom::Sym(s1), Atom::Sym(s2)) => s1 == s2,
-            _ => false,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum Sexp {
-    Atom(Atom),
-    List(Vec<Sexp>),
-}
-
-impl std::cmp::PartialEq for Sexp {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Sexp::Atom(a1), Sexp::Atom(a2)) => a1 == a2,
-            (Sexp::List(l1), Sexp::List(l2)) => l1 == l2,
-            _ => false,
+            (Sexp::List(lhs), Sexp::List(rhs)) => lhs == rhs,
+            (Sexp::Nil, Sexp::Nil) => true,
+            (Sexp::True, Sexp::True) => true,
+            (Sexp::Num(lhs), Sexp::Num(rhs)) => lhs == rhs,
+            (Sexp::Sym(lhs), Sexp::Sym(rhs)) => lhs == rhs,
+            (_, _) => false,
         }
     }
 }
@@ -39,12 +25,6 @@ impl std::cmp::PartialEq for Sexp {
 impl std::fmt::Display for Sexp {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Sexp::Atom(atom) => match atom {
-                Atom::Nil => write!(f, "nil")?,
-                Atom::True => write!(f, "t")?,
-                Atom::Num(d) => write!(f, "{}", d)?,
-                Atom::Sym(s) => write!(f, "{}", s)?,
-            },
             Sexp::List(l) => {
                 write!(f, "(")?;
 
@@ -53,6 +33,10 @@ impl std::fmt::Display for Sexp {
                 }
                 write!(f, ")")?;
             }
+            Sexp::Nil => write!(f, "nil")?,
+            Sexp::True => write!(f, "t")?,
+            Sexp::Num(d) => write!(f, "{}", d)?,
+            Sexp::Sym(s) => write!(f, "{}", s)?,
         }
 
         Ok(())
@@ -205,14 +189,14 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
                 current_sexp = sexp_stack.pop().unwrap();
                 current_sexp.push(Sexp::List(finished_sexp));
             }
-            lex::Token::Digit(d) => current_sexp.push(Sexp::Atom(Atom::Num(d))),
+            lex::Token::Digit(d) => current_sexp.push(Sexp::Num(d)),
             lex::Token::String(s) => {
                 if s == "nil" {
-                    current_sexp.push(Sexp::Atom(Atom::Nil));
+                    current_sexp.push(Sexp::Nil);
                 } else if s == "t" {
-                    current_sexp.push(Sexp::Atom(Atom::True));
+                    current_sexp.push(Sexp::True);
                 } else {
-                    current_sexp.push(Sexp::Atom(Atom::Sym(s)))
+                    current_sexp.push(Sexp::Sym(s));
                 }
             }
             _ => panic!("invalid syntax"),
