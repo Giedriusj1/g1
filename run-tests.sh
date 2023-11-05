@@ -18,7 +18,7 @@ run_test() {
 }
 
 # Find all files beginning with test-* and run tests concurrently
-for test_file in test-*; do
+for test_file in ./tests/test-*; do
     run_test "$test_file" &
 done
 
