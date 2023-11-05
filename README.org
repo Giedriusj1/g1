@@ -1,0 +1,17 @@
+elisp like toy language
+
+#+begin_src elisp
+(equal (let ((first 1) (second 2) (next 0)
+	     ;; We begin with 2, because 2 is the first even number, and it's precalculated
+	     (sum 2))
+	 (while (< next 4000000)
+	   (progn
+	     (if (= 0 (% next 2))
+		 (setq sum (+ sum next)))
+
+	     (setq next (+ first second))
+	     (setq first second)
+	     (setq second next)))
+	 sum)
+       4613732)
+#+end_src
