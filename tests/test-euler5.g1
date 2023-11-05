@@ -1,0 +1,35 @@
+;; <p>$2520$ is the smallest number that can be divided by each of the numbers from $1$ to $10$ without any remainder.</p>
+;; <p>What is the smallest positive number that is <strong class="tooltip">evenly divisible<span class="tooltiptext">divisible with no remainder</span></strong> by all of the numbers from $1$ to $20$?</p>
+
+
+;; TODO: this is not solving the full problem for now....
+
+
+(defun evenlyDivisible (currentNumber)
+  (let ((divisibleFound nil) (num 1))
+    ;; (dbg currentNumber)
+
+    (while
+	(and (equal divisibleFound nil) (< num 10))
+      (progn
+	(increment num)
+	(if ( (> (% currentNumber num) 0))
+	    (setq divisibleFound t))
+	;; (dbg num)
+	)
+      )
+    (equal divisibleFound nil)))
+
+(equal (let ((found 0) (currentNumber 0))
+  (while (equal found 0)
+    (progn
+      (increment currentNumber)
+      ;; (dbg currentNumber)
+
+      (if (evenlyDivisible currentNumber)
+	  (setq found t))))
+
+  currentNumber)
+
+
+2520)
