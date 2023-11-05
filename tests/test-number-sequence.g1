@@ -1,0 +1,15 @@
+(defun number-sequence (from to)
+
+  (let ((sequence '(1)))
+    (message sequence)
+    sequence
+    ;; sequence
+    ;; sequence
+    )
+
+  ;; '(message 'hello)
+  )
+
+(number-sequence 1 10)
+
+t

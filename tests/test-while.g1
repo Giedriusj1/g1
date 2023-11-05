@@ -1,0 +1,20 @@
+(and
+
+ (setq i 10)
+ (equal (while (> i 0)
+	  (progn
+	    (setq i (- i 1)))) nil)
+
+ (equal i 0)
+
+ ;; Same as above, but with a let
+ (equal
+  (let ((a 10))
+    (while (> a 0)
+      (progn
+	(setq a (- a 1))))
+    a
+    )
+  0)
+
+ )

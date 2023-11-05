@@ -1,0 +1,13 @@
+(and
+
+ ;; test increment macro
+ (setq a 1)
+
+ (equal (increment a) 2)
+ (equal a 2)
+
+ (let ((b 1))
+   (equal (increment b) 2)
+   (equal b 2))
+
+ )

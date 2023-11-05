@@ -1,0 +1,20 @@
+(and
+
+ (equal '''''''''a (quote (quote (quote (quote (quote (quote (quote (quote (quote a ) ) ) ) ) ) ) )))
+
+
+ (equal '`'''''''a (quote (backtick (quote (quote (quote (quote (quote (quote (quote a ) ) ) ) ) ) ) )))
+
+
+ (equal `'`'''''''a (backtick (quote (backtick (quote (quote (quote (quote (quote (quote (quote a ) ) ) ) ) ) ) ))))
+
+
+
+ (equal `'`'''''''(a) (backtick (quote (backtick (quote (quote (quote (quote (quote (quote (quote (a) ) ) ) ) ) ) ) ))))
+
+
+ (equal `'`'''''''(a 1 2 3 4 5) (backtick (quote (backtick (quote (quote (quote (quote (quote (quote (quote (a 1 2 3 4 5) ) ) ) ) ) ) ) ))))
+
+
+ (equal `'`'''''''(+ 1 2) (backtick (quote (backtick (quote (quote (quote (quote (quote (quote (quote (+ 1 2) ) ) ) ) ) ) ) ))))
+ )

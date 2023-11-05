@@ -1,0 +1,59 @@
+(and
+
+ ;; backtick simple atoms
+ (equal (backtick 1) (backtick 1) )
+ (equal (backtick a) (backtick a) )
+ (equal `a (backtick a))
+ (equal `1 (backtick 1))
+ (equal `1 `1)
+
+ ;; backtick a list
+ (equal `(a b c) `(a b c))
+ (equal (backtick (a b c)) (backtick (a b c)))
+ (equal `(a b c) (backtick (a b c)))
+
+ ;; nested lists
+ (equal `(a (b c) d) `(a (b c) d))
+
+ (equal `(a (b c) d) (backtick (a (b c) d)))
+
+ (equal `(a `(b c) d) (backtick (a (backtick (b c)) d)))
+
+ (equal (equal `(a (b c) d) `(a (b c) ddddddddddddddddddd )) nil)
+
+ ;; backtick a backtick
+ (equal (backtick (backtick a)) (backtick (backtick a)))
+
+ (equal `(backtick a) (backtick (backtick a)))
+
+ (equal ``a (backtick (backtick a)))
+
+ (equal `````a (backtick(backtick(backtick (backtick (backtick a))))))
+
+ (equal `````a  `````a)
+
+ ;; Quoting symbols and numbers
+ (equal (backtick symbol) `symbol)
+ (equal (backtick 42) 42)
+
+ ;; ;; Quoting special characters
+ (equal (backtick (+ 2 2)) `(+ 2 2))
+ (equal (backtick (setq x 10)) `(setq x 10))
+
+ ;; Quoting functions and expressions
+ (equal (backtick (lambda (x) (+ x 1))) `(lambda (x) (+ x 1)))
+
+ ;; Quoting within expressions
+ (equal (list `backtick `a) ``a)
+ (equal (list `backtick ``a) ```a)
+
+ ;; Quoting within nested lists
+ (equal (list `backtick (list `a `b)) ``(a b))
+ (equal (list `backtick (list `backtick `a)) ```a)
+
+ ;; ;; Quoting empty list
+ (equal (backtick ()) `())
+
+ ;; Quoting special forms
+ (equal (list `backtick (backtick (setq x 10))) ``(setq x 10))
+ )
