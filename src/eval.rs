@@ -15,8 +15,8 @@ impl EvalState {
     }
 }
 
-fn eval_sexp_to_num(sexp: &Sexp, eval_state: &mut EvalState) -> i64 {
-    let res = eval_sexp(sexp, eval_state);
+fn eval_sexp_to_num(sexp: &Sexp, state: &mut EvalState) -> i64 {
+    let res = eval_sexp(sexp, state);
 
     if let Sexp::Num(n) = res {
         n
@@ -25,27 +25,27 @@ fn eval_sexp_to_num(sexp: &Sexp, eval_state: &mut EvalState) -> i64 {
     }
 }
 
-fn get_from_fn_map_or_global(var_name: &String, eval_state: &EvalState) -> Option<Sexp> {
+fn get_from_fn_map_or_global(var_name: &String, state: &EvalState) -> Option<Sexp> {
     // TODO: this is actually quite inefficient, because if we are in a deep nested function,
     // and we want to access a global var, we have to iterate through all the fn_maps first.
 
     // Check the functions map first (that way we default to local variables first, and allow for
     // variable shadowing)
-    for var in eval_state.fn_map.iter().rev() {
+    for var in state.fn_map.iter().rev() {
         if let Some(sexp) = var.get(var_name) {
             return Some(sexp.to_owned());
         }
     }
 
     // Check the global map last.
-    if let Some(sexp) = eval_state.global_map.get(var_name) {
+    if let Some(sexp) = state.global_map.get(var_name) {
         return Some(sexp.to_owned());
     }
 
     None
 }
 
-fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp {
+fn eval_commas_within_backtick(sexp: &Sexp, state: &mut EvalState) -> Sexp {
     match sexp {
         Sexp::List(l) => Sexp::List(
             l.iter()
@@ -53,12 +53,12 @@ fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp 
                     if let Sexp::List(l) = sexp {
                         if let Some(Sexp::Sym(s)) = l.first() {
                             if s == "comma" {
-                                eval_sexp(l.get(1).unwrap(), eval_state)
+                                eval_sexp(l.get(1).unwrap(), state)
                             } else {
-                                eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state)
+                                eval_commas_within_backtick(&Sexp::List(l.clone()), state)
                             }
                         } else {
-                            eval_commas_within_backtick(&Sexp::List(l.clone()), eval_state)
+                            eval_commas_within_backtick(&Sexp::List(l.clone()), state)
                         }
                     } else {
                         sexp.clone()
@@ -70,7 +70,7 @@ fn eval_commas_within_backtick(sexp: &Sexp, eval_state: &mut EvalState) -> Sexp 
     }
 }
 
-fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalState) -> Sexp {
+fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], state: &mut EvalState) -> Sexp {
     // ourfn is the function body. fncall is a list containing the function name, and the arguments to the function.
     // for example: ((a b) (+ a b))
 
@@ -87,14 +87,14 @@ fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], eval_state: &mut EvalSta
     for (index, var) in fnparams.iter().enumerate() {
         let name = if let Sexp::Sym(s) = var { s } else { panic!("function param name should be a symbol") };
 
-        fn_param_map.insert(name.to_owned(), eval_sexp(fncall.get(index + 1).unwrap(), eval_state));
+        fn_param_map.insert(name.to_owned(), eval_sexp(fncall.get(index + 1).unwrap(), state));
     }
 
-    eval_state.fn_map.push(fn_param_map);
+    state.fn_map.push(fn_param_map);
 
-    let ret = eval_sexp(fnbody.get(1).unwrap(), eval_state);
+    let ret = eval_sexp(fnbody.get(1).unwrap(), state);
 
-    eval_state.fn_map.pop();
+    state.fn_map.pop();
 
     ret
 }
