@@ -2,11 +2,29 @@
 ;; <p>Find the largest palindrome made from the product of two $3$-digit numbers.</p>
 
 
-;; (dotimes (i 1000)
-;;   (dotimes (j 1000)
-;;     ;; (message (cons i j))
-;;     )
+(defun reverseNumber (num)
+  (let ((n num) (reversed 0))
+    (while (> n 0)
+      (progn
+	(setq reversed (+ (* reversed 10) (% n 10)))
+	(setq n (/ n 10))))
+    reversed))
 
-;;   )
+(defun isPalindrome (num)
+  (equal num (reverseNumber num)))
 
-t
+(equal
+ (let ((largestFound 0))
+   (dotimes (i 1000)
+     (dotimes (j 1000)
+       (let ((product (* i j)))
+	 (if ((isPalindrome product))
+	     (if (> product largestFound)
+		 (setq largestFound product))
+	   )
+	 )
+       )
+     )
+   largestFound)
+
+ 906609)
