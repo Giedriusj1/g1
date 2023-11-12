@@ -1,0 +1,14 @@
+(and
+ (test-equal (reverse '(1 2 3 4 5)) '(5 4 3 2 1))
+
+ (let ((x '(1 2 3 4 5)))
+   (test-equal (reverse x) '(5 4 3 2 1)))
+
+ (setq y '(1 2 3 4 5))
+ (test-equal (reverse y) '(5 4 3 2 1))
+
+ (test-equal (reverse (reverse '(1 2 3 4 5))) '(1 2 3 4 5))
+
+ (test-equal (reverse (reverse '(1 (2) 3 4 5))) '(1 (2) 3 4 5))
+
+ (test-equal (reverse '(1 (2) 3 4 5)) '(5 4 3 (2) 1)))

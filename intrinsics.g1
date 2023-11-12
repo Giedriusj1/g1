@@ -1,13 +1,11 @@
 ;; This file is loader before any other file.
 
+;; Helpful when debugging
+(defmacro dbg (var)
+  (eval `(message (cons var ,var))))
+
 (defmacro set (var val)
   (eval `(setq ,(eval var) ,val)))
-
-(defmacro increment (var)
-  (eval `(setq ,var (+ ,var 1))))
-
-(defmacro decrement (var)
-  (eval `(setq ,var (- ,var 1))))
 
 (defmacro lambda (params body)
   `(,params
@@ -20,6 +18,15 @@
 		 ,params
 		 ,body))))
 
+(defmacro increment (var)
+  (eval `(setq ,var (+ ,var 1))))
+
+(defmacro decrement (var)
+  (eval `(setq ,var (- ,var 1))))
+
+;; Example:
+;; (dotimes (a 4)
+;;   (message a))
 (defmacro dotimes (bind body)
   (eval `(let ((,(car bind) 0))
 	   (while (< ,(car bind) ,(car (cdr bind)))
@@ -27,16 +34,14 @@
 	       ,body
 	       (increment ,(car bind)))))))
 
+;; Executes body iter times
 (defmacro loop (iter body)
   (eval `(dotimes (i ,iter) ,body)))
 
+;; Basically an if statement without the else part
 (defmacro when (condition action)
   (if condition
       (eval action)))
-
-(defmacro dbg (var)
-  (eval `(message (cons var ,var))))
-
 
 ;; (number-sequence 1 10) will generate (1 2 3 4 5 6 7 8 9 10)
 ;; TODO: handle edge cases, such as (number-sequence 1 1) and (number-sequence 1 0)
@@ -48,7 +53,6 @@
 	(increment from)))
     sequence))
 
-;;TODO: write some tests for this
 (defun reverse (seq)
   (let ((reversed '()))
     (while (equal (equal seq '()) nil)
@@ -58,8 +62,11 @@
 
     reversed))
 
-
-;;TODO: Needs some tests as well
+;; Example:
+;; (seq-filter (lambda (a)
+;; 	      (progn
+;; 		(if (< a 5) t)))
+;; 	    '(1 2 3 4 5 6 7 8 9 10))
 (defmacro seq-filter (filter l)
   (let ((filtered '()) (remainingList (eval l)))
     (while (equal (equal remainingList '()) nil)
@@ -71,6 +78,8 @@
     (reverse filtered)))
 
 
+
+;; Only used internally for out tests
 (defmacro test-equal (test value)
   (let ((testResult (eval test)) (valueResult (eval value)))
     (progn
