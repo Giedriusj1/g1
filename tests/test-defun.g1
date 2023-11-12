@@ -1,18 +1,16 @@
 (and
 
  (defun testFunction (a) (* a 20))
- (equal (testFunction 8) 160)
+ (test-equal (testFunction 8) 160)
 
  (defun testFunctionTwoParams (a b) (+ a b))
- (equal (testFunctionTwoParams 1 11) 12)
+ (test-equal (testFunctionTwoParams 1 11) 12)
 
 
  (defun testFunctionTwoParamsEvalParams (a b) (+ a b))
- (equal (testFunctionTwoParamsEvalParams (+ 1 1) (+ 10 1)) 13)
+ (test-equal (testFunctionTwoParamsEvalParams (+ 1 1) (+ 10 1)) 13)
 
 
  ;; Test recursive function
  (defun simpleRecursiveFunction (a) (if (> a 10) a (simpleRecursiveFunction (+ a 1))))
- (equal (simpleRecursiveFunction 10)  11)
-
- )
+ (test-equal (simpleRecursiveFunction 10)  11))

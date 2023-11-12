@@ -4,13 +4,13 @@
  (let ((a 1))
    (when t (setq a (+ a 1)))
 
-   (equal a 2))
+   (test-equal a 2))
 
  ;; when body is not executed if when evals to nil
  (let ((a 1))
    (when nil (setq a (+ a 1)))
 
-   (equal a 1))
+   (test-equal a 1))
 
 
  )

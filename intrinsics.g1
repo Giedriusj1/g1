@@ -6,6 +6,9 @@
 (defmacro increment (var)
   (eval `(setq ,var (+ ,var 1))))
 
+(defmacro decrement (var)
+  (eval `(setq ,var (- ,var 1))))
+
 (defmacro lambda (params body)
   `(,params
     ,body))
@@ -33,3 +36,51 @@
 
 (defmacro dbg (var)
   (eval `(message (cons var ,var))))
+
+
+;; (number-sequence 1 10) will generate (1 2 3 4 5 6 7 8 9 10)
+;; TODO: handle edge cases, such as (number-sequence 1 1) and (number-sequence 1 0)
+(defmacro number-sequence (from to)
+  (let ((sequence '()))
+    (while (> (+ to 1) from )
+      (progn
+	(setq sequence (cons (+ (- to from) 1)  sequence))
+	(increment from)))
+    sequence))
+
+;;TODO: write some tests for this
+(defun reverse (seq)
+  (let ((reversed '()))
+    (while (equal (equal seq '()) nil)
+      (progn
+	(setq reversed (cons (car seq) reversed))
+	(setq seq (cdr seq))))
+
+    reversed))
+
+
+;;TODO: Needs some tests as well
+(defmacro seq-filter (filter l)
+  (let ((filtered '()) (remainingList (eval l)))
+    (while (equal (equal remainingList '()) nil)
+      (progn
+	(if ((eval filter) (car remainingList))
+	    (setq filtered (cons (car remainingList) filtered )))
+
+	(setq remainingList (cdr remainingList))))
+    (reverse filtered)))
+
+
+(defmacro test-equal (test value)
+  (let ((testResult (eval test)) (valueResult (eval value)))
+    (progn
+      (if (equal testResult valueResult)
+	  ;; All good, return t
+	  t
+	;; Something went wrong, print some debug info and return nil
+	(progn
+	  (message test)
+	  (message (list 'result testResult))
+	  (message (list 'expected valueResult))
+
+	  nil)))))

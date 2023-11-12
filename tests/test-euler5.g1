@@ -20,16 +20,15 @@
       )
     (equal divisibleFound nil)))
 
-(equal (let ((found 0) (currentNumber 0))
-  (while (equal found 0)
-    (progn
-      (increment currentNumber)
-      ;; (dbg currentNumber)
+(test-equal (let ((found 0) (currentNumber 0))
+	      (while (equal found 0)
+		(progn
+		  (increment currentNumber)
+		  ;; (dbg currentNumber)
 
-      (if (evenlyDivisible currentNumber)
-	  (setq found t))))
+		  (if (evenlyDivisible currentNumber)
+		      (setq found t))))
 
-  currentNumber)
+	      currentNumber)
 
-
-2520)
+	    2520)

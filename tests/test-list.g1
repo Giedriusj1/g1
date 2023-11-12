@@ -1,20 +1,20 @@
 (and
 
  ;; empty list
- (equal (list) nil)
+ (test-equal (list) nil)
 
  ;; list with one element
- (equal (list 1) (quote (1)))
+ (test-equal (list 1) (quote (1)))
 
  ;; list with two elements
- (equal (list 1 2) (quote (1 2)))
+ (test-equal (list 1 2) (quote (1 2)))
 
  ;; list with lots of elements
- (equal (list 1 2 2 2 2 3 4 1 1 2 3 1 3 2) (quote (1 2 2 2 2 3 4 1 1 2 3 1 3 2)))
+ (test-equal (list 1 2 2 2 2 3 4 1 1 2 3 1 3 2) (quote (1 2 2 2 2 3 4 1 1 2 3 1 3 2)))
 
  (setq a 123)
 
- (equal (list a 2) (quote (123 2)))
+ (test-equal (list a 2) (quote (123 2)))
 
  ;; list with symbols
- (equal (list (quote a) (quote b)) (quote (a b))))
+ (test-equal (list (quote a) (quote b)) (quote (a b))))

@@ -1,29 +1,29 @@
 (and
 
  ;; test car
- (equal (car (quote (aaa 2 3)))
-	(quote aaa))
+ (test-equal (car (quote (aaa 2 3)))
+	     (quote aaa))
 
- (equal (car (quote (1 2 3)))
-	1)
+ (test-equal (car (quote (1 2 3)))
+	     1)
 
 
  ;; test cdr
- (equal (cdr (quote (1 2 3)))
-	(quote (2 3)))
+ (test-equal (cdr (quote (1 2 3)))
+	     (quote (2 3)))
 
 
- (equal (cdr (quote (1 2 c)))
-	(quote (2 c)))
+ (test-equal (cdr (quote (1 2 c)))
+	     (quote (2 c)))
 
 
  ;; test cons
- (equal (cons 1 (quote (2 3)))
-	(quote (1 2 3)))
+ (test-equal (cons 1 (quote (2 3)))
+	     (quote (1 2 3)))
 
 
- (equal (cons (quote a) (quote (2 3)))
-	(quote (a 2 3)))
+ (test-equal (cons (quote a) (quote (2 3)))
+	     (quote (a 2 3)))
 
 
  )

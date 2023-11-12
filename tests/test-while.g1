@@ -1,14 +1,14 @@
 (and
 
  (setq i 10)
- (equal (while (> i 0)
-	  (progn
-	    (setq i (- i 1)))) nil)
+ (test-equal (while (> i 0)
+	       (progn
+		 (setq i (- i 1)))) nil)
 
- (equal i 0)
+ (test-equal i 0)
 
  ;; Same as above, but with a let
- (equal
+ (test-equal
   (let ((a 10))
     (while (> a 0)
       (progn

@@ -1,24 +1,24 @@
 (and
 
  ;; let with no statements should eval into nil
- (equal (let ((a 1) (b 2)))
-	nil)
+ (test-equal (let ((a 1) (b 2)))
+	     nil)
 
  ;; simple let
- (equal (let ((a 1) (b 2))
-	  (+ a b))
-	3)
+ (test-equal (let ((a 1) (b 2))
+	       (+ a b))
+	     3)
 
 
  ;; nested let, shadowing
- (equal (let ((a 1) (b 2))
-	  (let ((a 3) (b 4))
-	    (+ a b)))
-	7)
+ (test-equal (let ((a 1) (b 2))
+	       (let ((a 3) (b 4))
+		 (+ a b)))
+	     7)
 
 
  ;; let should not leak variables
- (equal
+ (test-equal
   (progn
 
     ;; This should have no side effects
@@ -31,7 +31,7 @@
   8)
 
  ;; let should not leak variables (set version)
- (equal
+ (test-equal
   (progn
 
     ;; This should have no side effects
@@ -45,7 +45,7 @@
 
 
  ;; let should not leak variables
- (equal
+ (test-equal
   (progn
 
     (setq a 4)
@@ -58,7 +58,7 @@
   8)
 
  ;; let should not leak variables (set version)
- (equal
+ (test-equal
   (progn
 
     (set 'a 4)
@@ -72,7 +72,7 @@
 
 
  ;; let variables should shadow the global ones
- (equal
+ (test-equal
   (progn
 
     (setq a 4)
@@ -88,7 +88,7 @@
 
 
  ;; let variables should shadow the global ones (set version)
- (equal
+ (test-equal
   (progn
 
     (set 'a 4)
@@ -104,7 +104,7 @@
 
 
  ;; setq should modify to local variables
- (equal
+ (test-equal
   (progn
 
     (setq a 4)
@@ -119,7 +119,7 @@
   5)
 
  ;; set should modify to local variables
- (equal
+ (test-equal
   (progn
 
     (setq a 4)
@@ -135,7 +135,7 @@
 
 
  ;; setq from within let should be able to create global vars
- (equal
+ (test-equal
   (progn
 
     (let ((a 1) (b 3))
@@ -151,7 +151,7 @@
 
 
  ;; set from within let should be able to create global vars
- (equal
+ (test-equal
   (progn
 
     (let ((a 1) (b 3))

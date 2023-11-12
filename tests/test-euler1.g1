@@ -3,10 +3,10 @@
 
 (and
  ;; solve with a let and dotimes macro
- (= (let ((sum 0))
-      (dotimes (n 1000)
-	(if (or (= (% n 3) 0) (= (% n 5) 0))
-	    (setq sum (+ sum n))))
-      sum)
+ (test-equal (let ((sum 0))
+	       (dotimes (n 1000)
+		 (if (or (= (% n 3) 0) (= (% n 5) 0))
+		     (setq sum (+ sum n))))
+	       sum)
 
-    233168))
+	     233168))

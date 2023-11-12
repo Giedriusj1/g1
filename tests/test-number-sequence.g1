@@ -1,15 +1,10 @@
-(defun number-sequence (from to)
+(and
 
-  (let ((sequence '(1)))
-    (message sequence)
-    sequence
-    ;; sequence
-    ;; sequence
-    )
+ (test-equal (number-sequence 1 10) (number-sequence 1 10))
 
-  ;; '(message 'hello)
-  )
+ (test-equal (number-sequence 1 10) '(1 2 3 4 5 6 7 8 9 10))
 
-(number-sequence 1 10)
 
-t
+ ;;TODO: test edge cases, such as (number-sequence 1 1) and (number-sequence 1 0)
+
+ )

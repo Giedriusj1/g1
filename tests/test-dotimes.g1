@@ -2,28 +2,27 @@
 
  (setq counter 0)
  ;; Should execute with 0 1 2 3
- (equal (dotimes (a 4)
-	  (progn
-	    (setq counter (+ counter a)))) nil)
+ (test-equal (dotimes (a 4)
+	       (progn
+		 (setq counter (+ counter a)))) nil)
 
- (equal counter 6)
+ (test-equal counter 6)
 
 
  ;; Same as above, but w/o progn in the body
  (setq counter 0)
  ;; Should execute with 0 1 2 3
- (equal (dotimes (a 4) (setq counter (+ counter a))) nil)
+ (test-equal (dotimes (a 4) (setq counter (+ counter a))) nil)
 
- (equal counter 6)
+ (test-equal counter 6)
 
  ;; same as above but with a let
- (equal (let ((c 0))
-	  (dotimes (a 4)
-	    (progn
-	      (setq c (+ c a))))
-	  c
+ (test-equal (let ((c 0))
+	       (dotimes (a 4)
+		 (progn
+		   (setq c (+ c a))))
+	       c
 
-	  ) 6)
+	       ) 6)
 
  )
-;; (message 'aaaa)
