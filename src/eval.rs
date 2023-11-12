@@ -359,7 +359,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                             }
                                         },
                                         _ => {
-                                            return eval_sexp(l.get(2).unwrap(), state);
+                                            if let Some(else_statement) = l.get(2) {
+                                                return eval_sexp(else_statement, state);
+                                            } else {
+                                                return Sexp::Nil;
+                                            }
                                         }
                                     }
                                 }
