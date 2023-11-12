@@ -33,7 +33,7 @@ fn main() {
 
     let filename = if args.len() < 2 { "./test.g1".to_string() } else { args[1].clone() };
 
-    let intrinsics_sexp = create_sexp_from_file("./intrinsics.g1".to_string());
+    let intrinsics_sexp = create_sexp_from_file("./built-in/intrinsics.g1".to_string());
 
     let sexp = create_sexp_from_file(filename);
 
