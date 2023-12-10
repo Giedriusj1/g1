@@ -1,0 +1,29 @@
+(and
+ (setq letters '(a                             b    c d e f g h i j k l m n o p q r s t u v w x    y z))
+
+ (test-equal letters '(a b c d e f g h i j k l m n o p q r s t u v w x y z))
+
+
+ (setq words '(the    quick                  brown fox jumps over the lazy  dog))
+ (test-equal words '(the quick brown fox jumps over the lazy dog))
+
+ (setq digits '(1 2 3 4    5 6 7                8 9                 10))
+
+ (test-equal digits '(1 2 3 4 5 6 7 8 9 10))
+
+
+ (setq numbers '(100 200 333                                  4 5 6 7 8 9                  10))
+ (test-equal numbers '(100 200 333 4 5 6 7 8 9 10))
+
+ (setq alphanum '(1      2 3 4 5 6 7 8 9 10 a b c d e                      f g h i j k l m n o p q r s t u v w x y z))
+ (test-equal alphanum '(1 2 3 4 5 6 7 8 9 10 a b c d e f g h i j k l m n o p q r s t u v w x y z))
+
+
+
+
+ (setq wordsAndNumbers '(hello123 abcdefg333 1234567890aaa 1234567890bbb 1234567890ccc))
+
+ (test-equal wordsAndNumbers '(hello123 abcdefg333 1234567890aaa 1234567890bbb 1234567890ccc))
+
+ (test-equal (length wordsAndNumbers) 5)
+ )

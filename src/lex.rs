@@ -35,43 +35,7 @@ fn extract_single_char(mut chars: std::str::Chars, c: char, token_type: Token) -
     None
 }
 
-fn extract_number(mut chars: std::str::Chars) -> Option<(Token, usize)> {
-    let mut count = 0;
-
-    let mut digits = String::new();
-
-    loop {
-        count += 1;
-
-        match chars.next() {
-            Some(char) => {
-                if char == ' ' {
-                    if digits.is_empty() {
-                        continue;
-                    } else {
-                        break;
-                    }
-                }
-
-                if char.is_numeric() {
-                    digits.push(char);
-                } else {
-                    count -= 1;
-                    break;
-                }
-            }
-
-            None => break,
-        }
-    }
-
-    match digits.parse::<i64>() {
-        Ok(n) => Some((Token::Digit(n), count)),
-        Err(_) => None,
-    }
-}
-
-fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
+fn extract_alphanumeric_symbol(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     let mut count = 0;
 
     let mut letters = String::new();
@@ -89,7 +53,7 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
                     }
                 }
 
-                if char.is_alphabetic()
+                if char.is_alphanumeric()
                     || char == '-'
                     || char == '+'
                     || char == '<'
@@ -113,7 +77,11 @@ fn extract_string(mut chars: std::str::Chars) -> Option<(Token, usize)> {
     if letters.is_empty() {
         None
     } else {
-        Some((Token::String(letters), count))
+        match letters.parse::<i64>() {
+            Ok(n) => Some((Token::Digit(n), count)),
+            // must contain letters, so it's a string
+            Err(_) => Some((Token::String(letters), count)),
+        }
     }
 }
 
@@ -125,8 +93,7 @@ pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
         move |x| extract_single_char(x, '\'', Token::Apostrophe),
         move |x| extract_single_char(x, '`', Token::Backtick),
         move |x| extract_single_char(x, ',', Token::Comma),
-        extract_number,
-        extract_string,
+        extract_alphanumeric_symbol,
     ];
 
     for match_fn in match_functions {
