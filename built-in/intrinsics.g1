@@ -76,3 +76,12 @@
 
 	(setq remainingList (cdr remainingList))))
     (reverse filtered)))
+
+
+(defun length (seq)
+  (let ((len 0))
+    (while (equal (equal seq '()) nil)
+      (progn
+	(increment len)
+	(setq seq (cdr seq))))
+    len))
