@@ -394,6 +394,44 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         return first;
                                     }
                                 }
+
+                                "split-symbol" => {
+                                    let symbol = eval_sexp(l.get(1).unwrap(), state);
+
+                                    if let Sexp::Sym(s) = symbol {
+                                        let mut chars = s.chars();
+
+                                        let mut ret: Vec<Sexp> = vec![];
+                                        loop {
+                                            match chars.next() {
+                                                Some(ref char) => {
+                                                    // check if numeric
+                                                    if char.is_numeric() {
+                                                        ret.push(Sexp::Num(char.to_digit(10).unwrap() as i64));
+                                                    } else {
+                                                    }
+
+                                                    ret.push(Sexp::Sym(char.to_string()));
+                                                }
+                                                None => break,
+                                            }
+                                        }
+
+                                        return Sexp::List(ret);
+                                    } else {
+                                        panic!("split-symbol expects a symbol");
+                                    }
+                                }
+
+                                "integerp" => {
+                                    let sexp = eval_sexp(l.get(1).unwrap(), state);
+
+                                    match sexp {
+                                        Sexp::Num(_) => return Sexp::True,
+                                        _ => return Sexp::Nil,
+                                    }
+                                }
+
                                 _ => {}
                             }
 
