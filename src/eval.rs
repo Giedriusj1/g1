@@ -320,7 +320,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         let eval_value = eval_sexp(l.get(2).unwrap(), state);
 
                                         // Let's see if the symbol exists in local scope first
-                                        for fn_map in state.fn_map.iter_mut() {
+                                        for fn_map in state.fn_map.iter_mut().rev() {
                                             if fn_map.get(&s).is_some() {
                                                 fn_map.insert(s.clone(), eval_value.clone());
 
