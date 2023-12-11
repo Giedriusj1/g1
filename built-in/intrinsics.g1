@@ -89,10 +89,10 @@
 ;; (dolist (a '(1 2 3 4 5 6 7 8 9 10))
 ;;   (message a))
 (defmacro dolist (bind body)
-  (eval `(let ((remaining ,(car (cdr bind))))
-	   (while (equal (equal remaining '()) nil)
-	     (let ((,(car bind) (car remaining)))
+  (eval `(let ((dolistRemaining ,(car (cdr bind))))
+	   (while (equal (equal dolistRemaining '()) nil)
+	     (let ((,(car bind) (car dolistRemaining)))
 	       (progn
-		 (eval body)
-		 (setq ,(car bind) (car remaining))
-		 (setq remaining (cdr remaining))))))))
+		 ,body
+		 (setq ,(car bind) (car dolistRemaining))
+		 (setq dolistRemaining (cdr dolistRemaining))))))))
