@@ -77,7 +77,6 @@
 	(setq remainingList (cdr remainingList))))
     (reverse filtered)))
 
-
 (defun length (seq)
   (let ((len 0))
     (while (equal (equal seq '()) nil)
@@ -85,3 +84,15 @@
 	(increment len)
 	(setq seq (cdr seq))))
     len))
+
+;; Example:
+;; (dolist (a '(1 2 3 4 5 6 7 8 9 10))
+;;   (message a))
+(defmacro dolist (bind body)
+  (eval `(let ((remaining ,(car (cdr bind))))
+	   (while (equal (equal remaining '()) nil)
+	     (let ((,(car bind) (car remaining)))
+	       (progn
+		 (eval body)
+		 (setq ,(car bind) (car remaining))
+		 (setq remaining (cdr remaining))))))))
