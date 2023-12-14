@@ -1,0 +1,19 @@
+;; simple dolist
+(test-equal 15
+	    (let ((sum 0))
+	      (dolist (a '(1 2 3 4 5))
+		(setq sum (+ sum a)))
+	      sum))
+
+;; dolist nested
+(test-equal 12
+	    (let ((sum 0))
+	      (dolist (a '(1 1))
+		(dolist (b '(2 2))
+		  (progn
+		    (dbg a)
+		    (dbg b)
+		    (setq sum (+ sum (+ a b))))
+
+		  ))
+	      sum))
