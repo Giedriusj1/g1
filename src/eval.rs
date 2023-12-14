@@ -394,26 +394,28 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         return first;
                                     }
                                 }
-
                                 "split-symbol" => {
                                     let symbol = eval_sexp(l.get(1).unwrap(), state);
 
                                     if let Sexp::Sym(s) = symbol {
-                                        let mut chars = s.chars();
+                                        let delimiter = match l.get(2) {
+                                            Some(d) => {
+                                                if let Sexp::Sym(s) = eval_sexp(d, state) {
+                                                    s
+                                                } else {
+                                                    panic!("split-symbol expects a symbol as a delimiter");
+                                                }
+                                            }
+                                            None => "".to_string(),
+                                        };
 
                                         let mut ret: Vec<Sexp> = vec![];
-                                        loop {
-                                            match chars.next() {
-                                                Some(ref char) => {
-                                                    // check if numeric
-                                                    if char.is_numeric() {
-                                                        ret.push(Sexp::Num(char.to_digit(10).unwrap() as i64));
-                                                    } else {
-                                                    }
 
-                                                    ret.push(Sexp::Sym(char.to_string()));
-                                                }
-                                                None => break,
+                                        for split in s.split(delimiter.as_str()).filter(|c| !c.is_empty()) {
+                                            if let Ok(n) = split.parse::<i64>() {
+                                                ret.push(Sexp::Num(n))
+                                            } else {
+                                                ret.push(Sexp::Sym(split.to_string()));
                                             }
                                         }
 
@@ -422,7 +424,6 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         panic!("split-symbol expects a symbol");
                                     }
                                 }
-
                                 "integerp" => {
                                     let sexp = eval_sexp(l.get(1).unwrap(), state);
 

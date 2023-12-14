@@ -1,0 +1,18 @@
+(and
+ (test-equal
+  '(a b c)
+  (split-symbol 'abc)
+
+  )
+
+
+ (test-equal
+  '(a c)
+  (split-symbol 'abc 'b)
+
+  )
+
+
+
+
+ )
