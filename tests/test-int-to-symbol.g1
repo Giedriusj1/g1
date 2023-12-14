@@ -1,0 +1,5 @@
+(and
+
+ (test-equal (integerp (int-to-symbol 1)) nil)
+
+ )

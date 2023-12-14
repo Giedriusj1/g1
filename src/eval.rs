@@ -432,6 +432,15 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     }
                                 }
 
+                                "int-to-symbol" => {
+                                    let sexp = eval_sexp(l.get(1).unwrap(), state);
+
+                                    match sexp {
+                                        Sexp::Num(n) => return Sexp::Sym(n.to_string()),
+                                        _ => return sexp,
+                                    }
+                                }
+
                                 _ => {}
                             }
 
