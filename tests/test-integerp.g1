@@ -1,0 +1,14 @@
+(and
+
+ (test-equal (integerp 1) t)
+ (test-equal (integerp 424242) t)
+ (test-equal (integerp (+ 424242 3333)) t)
+ (test-equal (integerp (* (+ 424242 3333) 2)) t)
+ (test-equal (integerp (/ (* (+ 424242 3333) 2) 3) ) t)
+
+
+ (test-equal (integerp 'asdfasdfasdfasd) nil)
+ (test-equal (integerp '(1 2 3)) nil)
+ (test-equal (integerp (list 1 2 3)) nil)
+ (test-equal (integerp (cons 1 '(2 3))) nil)
+ )
