@@ -1,0 +1,6 @@
+(and
+ (test-equal (concat-to-symbol '(a b c 1 2 3)) 'abc123)
+
+ (test-equal (concat-to-symbol '(1 2) )  (int-to-symbol 12))
+
+ )
