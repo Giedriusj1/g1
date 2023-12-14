@@ -424,6 +424,23 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                         panic!("split-symbol expects a symbol");
                                     }
                                 }
+                                "concat-to-symbol" => {
+                                    let mut ret = "".to_string();
+
+                                    if let Sexp::List(l) = eval_sexp(l.get(1).unwrap(), state) {
+                                        for sexp in l.iter() {
+                                            if let Sexp::Sym(s) = sexp {
+                                                ret.push_str(s);
+                                            } else if let Sexp::Num(n) = sexp {
+                                                ret.push_str(n.to_string().as_str());
+                                            } else {
+                                                panic!("concat-to-symbol expects a list of symbols or numbers");
+                                            }
+                                        }
+                                    };
+
+                                    return Sexp::Sym(ret);
+                                }
                                 "integerp" => {
                                     let sexp = eval_sexp(l.get(1).unwrap(), state);
 
