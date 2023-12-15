@@ -210,7 +210,10 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     }
                                 }
                                 "car" => match eval_sexp(l.get(1).unwrap(), state) {
-                                    Sexp::List(l) => return l.first().unwrap().clone(),
+                                    Sexp::List(l) => match l.first() {
+                                        Some(elem) => return elem.clone(),
+                                        None => panic!("car needs a list with at least one element"),
+                                    },
                                     _ => panic!("car needs a list"),
                                 },
                                 "quote" => {
