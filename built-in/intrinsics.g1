@@ -7,6 +7,9 @@
 (defmacro set (var val)
   (eval `(setq ,(eval var) ,val)))
 
+(defmacro not (aa)
+  (eval `(equal ,aa nil)))
+
 (defmacro lambda (params body)
   `(,params
     ,body))
