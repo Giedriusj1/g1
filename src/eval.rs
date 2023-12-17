@@ -424,7 +424,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
 
                                         return Sexp::List(ret);
                                     } else {
-                                        panic!("split-symbol expects a symbol");
+                                        panic!("split-symbol expects a symbol, but found: {symbol}");
                                     }
                                 }
                                 "concat-to-symbol" => {
@@ -441,6 +441,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                             }
                                         }
                                     };
+
+                                    if ret.is_empty() {
+                                        // println!("ret is empty, returning nil");
+                                        return Sexp::Nil;
+                                    }
 
                                     return Sexp::Sym(ret);
                                 }
