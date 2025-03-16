@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 # Function to run tests and print the result
 run_test() {
     test_file="$1"
-    output=$(cargo run  --release ./$test_file 2>/dev/null)
+    output=$(./target/release/g1 ./$test_file 2>/dev/null)
     if echo "$output" | grep -q "eval to: t"; then
         echo -e "${GREEN}[OK]    ${NC} $test_file"
     else
