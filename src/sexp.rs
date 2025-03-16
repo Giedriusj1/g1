@@ -1,6 +1,5 @@
 use crate::lex;
 
-// use Rc
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -10,6 +9,32 @@ pub(crate) enum Sexp {
     True,        // #t
     Num(i64),    // A digit
     Sym(String), // A symbol
+    Instrinsics(IntrinsicInstruction),
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum IntrinsicInstruction {
+    Let,
+    Cdr,
+    Cons,
+    List,
+    Car,
+
+    // Quote,
+    // Backtick,
+    // Comma,
+    Eval,
+    Message,
+    // Equal,
+    // And,
+    Progn,
+    // Setq, ????
+    Defmacro,
+    If,
+    While,
+    Or,
+    SplitSymbol,
+    Integerp,
 }
 
 impl PartialEq for Sexp {
@@ -21,6 +46,67 @@ impl PartialEq for Sexp {
             (Sexp::Num(lhs), Sexp::Num(rhs)) => lhs == rhs,
             (Sexp::Sym(lhs), Sexp::Sym(rhs)) => lhs == rhs,
             (_, _) => false,
+        }
+    }
+}
+
+impl std::fmt::Display for IntrinsicInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            IntrinsicInstruction::Let => write!(f, "let")?,
+            IntrinsicInstruction::Cdr => write!(f, "cdr")?,
+            IntrinsicInstruction::Cons => write!(f, "cons")?,
+            IntrinsicInstruction::List => write!(f, "list")?,
+            IntrinsicInstruction::Car => write!(f, "car")?,
+            // IntrinsicInstruction::Quote => write!(f, "quote")?, ????????
+            // IntrinsicInstruction::Backtick => write!(f, "backtick")?, ?????
+            // IntrinsicInstruction::Comma => write!(f, "comma")?,
+            IntrinsicInstruction::Eval => write!(f, "eval")?,
+            IntrinsicInstruction::Message => write!(f, "message")?,
+            // IntrinsicInstruction::Equal => write!(f, "equal")?,
+            // IntrinsicInstruction::And => write!(f, "and")?,
+            IntrinsicInstruction::Progn => write!(f, "progn")?,
+            // IntrinsicInstruction::Setq => write!(f, "setq")?,
+            IntrinsicInstruction::Defmacro => write!(f, "defmacro")?,
+            IntrinsicInstruction::If => write!(f, "if")?,
+            IntrinsicInstruction::While => write!(f, "while")?,
+            IntrinsicInstruction::Or => write!(f, "or")?,
+            IntrinsicInstruction::SplitSymbol => write!(f, "split-symbol")?,
+            IntrinsicInstruction::Integerp => write!(f, "integerp")?,
+        }
+
+        Ok(())
+    }
+}
+
+use std::str::FromStr;
+
+impl FromStr for IntrinsicInstruction {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "let" => Ok(IntrinsicInstruction::Let),
+            "cdr" => Ok(IntrinsicInstruction::Cdr),
+            "cons" => Ok(IntrinsicInstruction::Cons),
+            "list" => Ok(IntrinsicInstruction::List),
+            "car" => Ok(IntrinsicInstruction::Car),
+            // "quote" => Ok(IntrinsicInstruction::Quote),
+            // "backtick" => Ok(IntrinsicInstruction::Backtick),
+            // "comma" => Ok(IntrinsicInstruction::Comma),
+            "eval" => Ok(IntrinsicInstruction::Eval),
+            "message" => Ok(IntrinsicInstruction::Message),
+            // "equal" => Ok(IntrinsicInstruction::Equal),
+            // "and" => Ok(IntrinsicInstruction::And),
+            "progn" => Ok(IntrinsicInstruction::Progn),
+            // "setq" => Ok(IntrinsicInstruction::Setq),
+            "defmacro" => Ok(IntrinsicInstruction::Defmacro),
+            "if" => Ok(IntrinsicInstruction::If),
+            "while" => Ok(IntrinsicInstruction::While),
+            "or" => Ok(IntrinsicInstruction::Or),
+            "split-symbol" => Ok(IntrinsicInstruction::SplitSymbol),
+            "integerp" => Ok(IntrinsicInstruction::Integerp),
+            _ => Err(()),
         }
     }
 }
@@ -44,6 +130,7 @@ impl std::fmt::Display for Sexp {
             Sexp::True => write!(f, "t")?,
             Sexp::Num(d) => write!(f, "{}", d)?,
             Sexp::Sym(s) => write!(f, "{}", s)?,
+            Self::Instrinsics(intrinsic) => write!(f, "{}", intrinsic)?, // Sexp::Let => write!(f, "let")?,
         }
 
         Ok(())
@@ -195,12 +282,27 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Rc<Sexp> {
             }
             lex::Token::Digit(d) => current_sexp.push(Rc::new(Sexp::Num(d))),
             lex::Token::String(s) => {
-                if s == "nil" {
-                    current_sexp.push(Rc::new(Sexp::Nil));
-                } else if s == "t" {
-                    current_sexp.push(Rc::new(Sexp::True));
+                if let Ok(intrinsic) = IntrinsicInstruction::from_str(&s) {
+                    current_sexp.push(Rc::new(Sexp::Instrinsics(intrinsic)));
                 } else {
-                    current_sexp.push(Rc::new(Sexp::Sym(s)));
+                    // if s == "let" {
+                    //     current_sexp.push(Rc::new(Sexp::Instrinsics(IntrinsicInstruction::Let)));
+                    // } else if s == "cons" {
+                    //     current_sexp.push(Rc::new(Sexp::Instrinsics(IntrinsicInstruction::Cons)));
+                    // } else if s == "cdr" {
+                    //     current_sexp.push(Rc::new(Sexp::Instrinsics(IntrinsicInstruction::Cdr)));
+                    // } else if s == "list" {
+                    //     current_sexp.push(Rc::new(Sexp::Instrinsics(IntrinsicInstruction::List)));
+                    // } else if s == "car" {
+                    //     current_sexp.push(Rc::new(Sexp::Instrinsics(IntrinsicInstruction::Car)));
+                    // } else
+                    if s == "nil" {
+                        current_sexp.push(Rc::new(Sexp::Nil));
+                    } else if s == "t" {
+                        current_sexp.push(Rc::new(Sexp::True));
+                    } else {
+                        current_sexp.push(Rc::new(Sexp::Sym(s)));
+                    }
                 }
             }
             _ => panic!("invalid syntax"),

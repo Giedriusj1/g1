@@ -27,9 +27,6 @@ fn create_sexp_from_file(filename: String) -> Rc<sexp::Sexp> {
 }
 
 fn main() {
-    // time how long it takes to run the program
-    let start = std::time::Instant::now();
-
     // read parameter passed to the program
     let args: Vec<String> = std::env::args().collect();
 
@@ -51,7 +48,4 @@ fn main() {
     let eval = eval::eval_sexp(sexp, &mut eval_state);
 
     println!("eval to: {eval}");
-
-    let end = std::time::Instant::now();
-    println!("execution time: {:?}", end - start);
 }
