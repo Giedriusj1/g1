@@ -2,7 +2,9 @@ mod eval;
 mod lex;
 mod sexp;
 
-fn create_sexp_from_file(filename: String) -> sexp::Sexp {
+use std::rc::Rc;
+
+fn create_sexp_from_file(filename: String) -> Rc<sexp::Sexp> {
     // Wrap the file contents in a progn, so that we can evaluate multiple expressions
     let mut text: String = "(progn ".to_string();
 
@@ -42,11 +44,11 @@ fn main() {
 
     // Evaluate intrinsics
     // TODO: check results
-    eval::eval_sexp(&intrinsics_sexp, &mut eval_state);
+    eval::eval_sexp(intrinsics_sexp, &mut eval_state);
 
-    eval::eval_sexp(&test_harness_sexp, &mut eval_state);
+    eval::eval_sexp(test_harness_sexp, &mut eval_state);
 
-    let eval = eval::eval_sexp(&sexp, &mut eval_state);
+    let eval = eval::eval_sexp(sexp, &mut eval_state);
 
     println!("eval to: {eval}");
 

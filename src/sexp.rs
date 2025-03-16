@@ -1,8 +1,11 @@
 use crate::lex;
 
+// use Rc
+use std::rc::Rc;
+
 #[derive(Clone, Debug)]
 pub(crate) enum Sexp {
-    List(Vec<Sexp>),
+    List(Vec<Rc<Sexp>>),
     Nil,         // ()
     True,        // #t
     Num(i64),    // A digit
@@ -171,13 +174,13 @@ fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
     expanded_tokens
 }
 
-pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
+pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Rc<Sexp> {
     // Expand backticks and apostrophes into the quotation syntax
     let tokens = expand_special_characters(&tokens);
 
-    let mut sexp_stack: Vec<Vec<Sexp>> = vec![];
+    let mut sexp_stack: Vec<Vec<Rc<Sexp>>> = vec![];
 
-    let mut current_sexp: Vec<Sexp> = vec![];
+    let mut current_sexp: Vec<Rc<Sexp>> = vec![];
 
     for token in tokens {
         match token {
@@ -188,16 +191,16 @@ pub(crate) fn create_sexp(tokens: Vec<lex::Token>) -> Sexp {
             lex::Token::RightParen => {
                 let finished_sexp = current_sexp;
                 current_sexp = sexp_stack.pop().unwrap();
-                current_sexp.push(Sexp::List(finished_sexp));
+                current_sexp.push(Rc::new(Sexp::List(finished_sexp)));
             }
-            lex::Token::Digit(d) => current_sexp.push(Sexp::Num(d)),
+            lex::Token::Digit(d) => current_sexp.push(Rc::new(Sexp::Num(d))),
             lex::Token::String(s) => {
                 if s == "nil" {
-                    current_sexp.push(Sexp::Nil);
+                    current_sexp.push(Rc::new(Sexp::Nil));
                 } else if s == "t" {
-                    current_sexp.push(Sexp::True);
+                    current_sexp.push(Rc::new(Sexp::True));
                 } else {
-                    current_sexp.push(Sexp::Sym(s));
+                    current_sexp.push(Rc::new(Sexp::Sym(s)));
                 }
             }
             _ => panic!("invalid syntax"),

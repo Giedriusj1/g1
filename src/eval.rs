@@ -1,12 +1,13 @@
 use crate::sexp::Sexp;
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Clone)]
 pub(crate) struct EvalState {
-    macro_map: HashMap<String, Sexp>,
-    global_map: HashMap<String, Sexp>,
-    fn_map: Vec<HashMap<String, Sexp>>,
+    macro_map: HashMap<String, Rc<Sexp>>,
+    global_map: HashMap<String, Rc<Sexp>>,
+    fn_map: Vec<HashMap<String, Rc<Sexp>>>,
 }
 
 impl EvalState {
@@ -15,17 +16,17 @@ impl EvalState {
     }
 }
 
-fn eval_sexp_to_num(sexp: &Sexp, state: &mut EvalState) -> i64 {
+fn eval_sexp_to_num(sexp: Rc<Sexp>, state: &mut EvalState) -> i64 {
     let res = eval_sexp(sexp, state);
 
-    if let Sexp::Num(n) = res {
+    if let Sexp::Num(n) = *res {
         n
     } else {
         panic!("expected a number, but found: {res}")
     }
 }
 
-fn get_from_fn_map_or_global(var_name: &String, state: &EvalState) -> Option<Sexp> {
+fn get_from_fn_map_or_global(var_name: &String, state: &EvalState) -> Option<Rc<Sexp>> {
     // TODO: this is actually quite inefficient, because if we are in a deep nested function,
     // and we want to access a global var, we have to iterate through all the fn_maps first.
 
@@ -45,92 +46,109 @@ fn get_from_fn_map_or_global(var_name: &String, state: &EvalState) -> Option<Sex
     None
 }
 
-fn eval_commas_within_backtick(sexp: &Sexp, state: &mut EvalState) -> Sexp {
-    match sexp {
-        Sexp::List(l) => Sexp::List(
+fn eval_commas_within_backtick(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
+    let root_sexp = sexp.clone();
+
+    match *root_sexp {
+        Sexp::List(ref l) => Rc::new(Sexp::List(
             l.iter()
                 .map(|sexp| {
-                    if let Sexp::List(l) = sexp {
-                        if let Some(Sexp::Sym(s)) = l.first() {
-                            if s == "comma" {
-                                eval_sexp(l.get(1).unwrap(), state)
+                    let t = sexp.clone();
+
+                    if let Sexp::List(ref l) = *t {
+                        // let l = l.clone();
+                        let first = l.first().cloned();
+
+                        if let Some(first) = first {
+                            let first = first.clone();
+                            if let Sexp::Sym(ref s) = *first {
+                                if s == "comma" {
+                                    eval_sexp(l.get(1).unwrap().clone(), state)
+                                } else {
+                                    eval_commas_within_backtick(Rc::new(Sexp::List(l.clone())), state)
+                                }
                             } else {
-                                eval_commas_within_backtick(&Sexp::List(l.clone()), state)
+                                // TODO: remove tis duplication
+                                eval_commas_within_backtick(Rc::new(Sexp::List(l.clone())), state)
                             }
                         } else {
-                            eval_commas_within_backtick(&Sexp::List(l.clone()), state)
+                            eval_commas_within_backtick(Rc::new(Sexp::List(l.clone())), state)
                         }
                     } else {
                         sexp.clone()
                     }
                 })
-                .collect::<Vec<Sexp>>(),
-        ),
+                .collect::<Vec<Rc<Sexp>>>(),
+        )),
         _ => sexp.clone(),
     }
 }
 
-fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], state: &mut EvalState) -> Sexp {
+// fn execute_function(fnbody: Vec<Sexp>, fncall: &[Sexp], state: &mut EvalState) -> Sexp {
+fn execute_function(fnbody: &Vec<Rc<Sexp>>, fncall: &Vec<Rc<Sexp>>, state: &mut EvalState) -> Rc<Sexp> {
     // ourfn is the function body. fncall is a list containing the function name, and the arguments to the function.
     // for example: ((a b) (+ a b))
 
     // fncall is a list containing the function name, and the arguments to the function
     // (add 2 3)
 
-    let fnparams = match fnbody.first().unwrap() {
-        Sexp::List(l) => l,
+    let f = fnbody.first().unwrap().clone();
+
+    let fnparams = match *f {
+        Sexp::List(ref l) => l,
         _ => panic!("function params should be a list"),
     };
 
-    let mut fn_param_map: HashMap<String, Sexp> = HashMap::new();
+    let mut fn_param_map: HashMap<String, Rc<Sexp>> = HashMap::new();
     // Map variable names to values passed into the function
     for (index, var) in fnparams.iter().enumerate() {
-        let name = if let Sexp::Sym(s) = var { s } else { panic!("function param name should be a symbol") };
+        let name = if let Sexp::Sym(ref s) = **var { s } else { panic!("function param name should be a symbol") };
 
-        fn_param_map.insert(name.to_owned(), eval_sexp(fncall.get(index + 1).unwrap(), state));
+        fn_param_map.insert(name.to_owned(), eval_sexp(fncall.get(index + 1).unwrap().clone(), state));
     }
 
     state.fn_map.push(fn_param_map);
 
-    let ret = eval_sexp(fnbody.get(1).unwrap(), state);
+    let ret = eval_sexp(fnbody.get(1).unwrap().clone(), state);
 
     state.fn_map.pop();
 
     ret
 }
 
-pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
-    match sexp {
-        Sexp::Sym(s) => match get_from_fn_map_or_global(s, state) {
+pub(crate) fn eval_sexp(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
+    match *sexp {
+        Sexp::Sym(ref s) => match get_from_fn_map_or_global(s, state) {
             Some(var) => var,
             None => panic!("symbol {s} is not defined"),
         },
-        Sexp::List(l) => {
+        Sexp::List(ref l) => {
             match l.first() {
-                None => Sexp::Nil, // empty list evaluates to nil
+                None => Rc::new(Sexp::Nil), // empty list evaluates to nil
                 Some(first_elem_sexp) => {
-                    match first_elem_sexp {
-                        Sexp::Nil => Sexp::Nil,
-                        Sexp::True => Sexp::True,
+                    match **first_elem_sexp {
+                        Sexp::Nil => Rc::new(Sexp::Nil),
+                        Sexp::True => Rc::new(Sexp::True),
                         Sexp::Num(_) => panic!("don't know how to evaluate a list starting with a number"),
-                        Sexp::Sym(s) => {
+                        Sexp::Sym(ref s) => {
                             match s.as_str() {
                                 "let" => {
                                     // Let statement should bind variables for the duration of the let statement.
                                     let let_param_list = l.get(1).unwrap();
 
-                                    match let_param_list {
-                                        Sexp::List(l) => {
-                                            let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+                                    match **let_param_list {
+                                        Sexp::List(ref l) => {
+                                            let mut current_function_param_map: HashMap<String, Rc<Sexp>> =
+                                                HashMap::new();
 
                                             for var in l {
-                                                match var {
-                                                    Sexp::List(l) => {
-                                                        match l.first().unwrap() {
-                                                            Sexp::Sym(let_var_name) => {
+                                                match **var {
+                                                    Sexp::List(ref l) => {
+                                                        match **l.first().unwrap() {
+                                                            Sexp::Sym(ref let_var_name) => {
                                                                 let var = l.get(1).unwrap().clone();
 
-                                                                let var_eval = eval_sexp(&var, state);
+                                                                let var_eval = eval_sexp(var, state);
 
                                                                 current_function_param_map
                                                                     .insert(let_var_name.to_owned(), var_eval);
@@ -161,56 +179,62 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     if statements.len() > 0 {
                                         for (pos, statement) in statements {
                                             if pos + 1 == l.len() {
-                                                let r = eval_sexp(statement, state);
+                                                let r = eval_sexp(statement.clone(), state);
 
                                                 state.fn_map.pop();
 
                                                 return r;
                                             } else {
-                                                eval_sexp(statement, state);
+                                                eval_sexp(statement.clone(), state);
                                             }
                                         }
                                     } else {
                                         state.fn_map.pop();
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
                                 }
                                 "cdr" => {
                                     assert_eq!(l.len(), 2);
-                                    let cdr = eval_sexp(l.get(1).unwrap(), state);
-                                    return match cdr {
-                                        Sexp::List(mut l) => {
-                                            l.remove(0);
-                                            Sexp::List(l)
+                                    let cdr = eval_sexp(l.get(1).unwrap().clone(), state);
+
+                                    return match *cdr {
+                                        Sexp::List(ref l) => {
+                                            let mut c = l.clone();
+
+                                            c.remove(0);
+                                            Rc::new(Sexp::List(c))
                                         }
                                         _ => panic!("cdr needs a list, but found {}", cdr),
                                     };
                                 }
                                 "cons" => {
                                     assert_eq!(l.len(), 3);
-                                    let first = eval_sexp(l.get(1).unwrap(), state);
+                                    let first = eval_sexp(l.get(1).unwrap().clone(), state);
 
-                                    let second = eval_sexp(l.get(2).unwrap(), state);
+                                    let second = eval_sexp(l.get(2).unwrap().clone(), state);
 
-                                    match second {
-                                        Sexp::List(mut l) => {
-                                            l.insert(0, first);
-                                            return Sexp::List(l);
+                                    match *second {
+                                        Sexp::List(ref l) => {
+                                            let mut c = l.clone();
+                                            c.insert(0, first);
+                                            return Rc::new(Sexp::List(c));
                                         }
-                                        _ => return Sexp::List(vec![first, second]),
+                                        _ => return Rc::new(Sexp::List(vec![first, second])),
                                     }
                                 }
                                 "list" => {
                                     if l.len() == 1 {
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     } else {
-                                        return Sexp::List(
-                                            l.iter().skip(1).map(|sexp| eval_sexp(sexp, state)).collect(),
-                                        );
+                                        // let sexp = sexp.clone();
+
+                                        return Rc::new(Sexp::List(
+                                            l.iter().skip(1).map(|sexp| eval_sexp(sexp.clone(), state)).collect(),
+                                        ));
                                     }
                                 }
-                                "car" => match eval_sexp(l.get(1).unwrap(), state) {
-                                    Sexp::List(l) => match l.first() {
+                                "car" => match *eval_sexp(l.get(1).unwrap().clone(), state) {
+                                    Sexp::List(ref l) => match l.first() {
                                         Some(elem) => return elem.clone(),
                                         None => panic!("car needs a list with at least one element"),
                                     },
@@ -220,32 +244,34 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     return l.get(1).unwrap().clone();
                                 }
                                 "backtick" => {
-                                    return eval_commas_within_backtick(l.get(1).unwrap(), state);
+                                    return eval_commas_within_backtick(l.get(1).unwrap().clone(), state);
                                 }
                                 "comma" => {
                                     panic!("comma should only be used within backtick");
                                 }
                                 "eval" => {
-                                    return eval_sexp(&eval_sexp(l.get(1).unwrap(), state), state);
+                                    return eval_sexp(eval_sexp(l.get(1).unwrap().clone(), state), state);
                                 }
                                 "message" => {
-                                    println!("{}", eval_sexp(l.get(1).unwrap(), state));
-                                    return Sexp::True;
+                                    println!("{}", eval_sexp(l.get(1).unwrap().clone(), state));
+                                    return Rc::new(Sexp::True);
                                 }
                                 "=" => {
-                                    if eval_sexp_to_num(l.get(1).unwrap(), state)
-                                        == eval_sexp_to_num(l.get(2).unwrap(), state)
+                                    if eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                        == eval_sexp_to_num(l.get(2).unwrap().clone(), state)
                                     {
-                                        return Sexp::True;
+                                        return Rc::new(Sexp::True);
                                     } else {
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
                                 }
                                 "equal" => {
-                                    if eval_sexp(l.get(1).unwrap(), state) == eval_sexp(l.get(2).unwrap(), state) {
-                                        return Sexp::True;
+                                    if eval_sexp(l.get(1).unwrap().clone(), state)
+                                        == eval_sexp(l.get(2).unwrap().clone(), state)
+                                    {
+                                        return Rc::new(Sexp::True);
                                     } else {
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
                                 }
                                 "and" => {
@@ -254,77 +280,77 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     // If no arg yields nil, return the last arg's value.
                                     for (pos, statement) in l.iter().enumerate().skip(1) {
                                         if pos + 1 == l.len() {
-                                            return eval_sexp(statement, state);
-                                        } else if let Sexp::Nil = eval_sexp(statement, state) {
-                                            return Sexp::Nil;
+                                            return eval_sexp(statement.clone(), state);
+                                        } else if let Sexp::Nil = *eval_sexp(statement.clone(), state) {
+                                            return Rc::new(Sexp::Nil);
                                         }
                                     }
                                 }
                                 "-" => {
-                                    return Sexp::Num(
-                                        eval_sexp_to_num(l.get(1).unwrap(), state)
-                                            - eval_sexp_to_num(l.get(2).unwrap(), state),
-                                    );
+                                    return Rc::new(Sexp::Num(
+                                        eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                            - eval_sexp_to_num(l.get(2).unwrap().clone(), state),
+                                    ));
                                 }
                                 "+" => {
-                                    return Sexp::Num(
-                                        eval_sexp_to_num(l.get(1).unwrap(), state)
-                                            + eval_sexp_to_num(l.get(2).unwrap(), state),
-                                    );
+                                    return Rc::new(Sexp::Num(
+                                        eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                            + eval_sexp_to_num(l.get(2).unwrap().clone(), state),
+                                    ));
                                 }
                                 "*" => {
-                                    return Sexp::Num(
-                                        eval_sexp_to_num(l.get(1).unwrap(), state)
-                                            * eval_sexp_to_num(l.get(2).unwrap(), state),
-                                    );
+                                    return Rc::new(Sexp::Num(
+                                        eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                            * eval_sexp_to_num(l.get(2).unwrap().clone(), state),
+                                    ));
                                 }
                                 "<" => {
-                                    if eval_sexp_to_num(l.get(1).unwrap(), state)
-                                        < eval_sexp_to_num(l.get(2).unwrap(), state)
+                                    if eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                        < eval_sexp_to_num(l.get(2).unwrap().clone(), state)
                                     {
-                                        return Sexp::True;
+                                        return Rc::new(Sexp::True);
                                     } else {
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
                                 }
                                 ">" => {
-                                    if eval_sexp_to_num(l.get(1).unwrap(), state)
-                                        > eval_sexp_to_num(l.get(2).unwrap(), state)
+                                    if eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                        > eval_sexp_to_num(l.get(2).unwrap().clone(), state)
                                     {
-                                        return Sexp::True;
+                                        return Rc::new(Sexp::True);
                                     } else {
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
                                 }
                                 "%" => {
-                                    return Sexp::Num(
-                                        eval_sexp_to_num(l.get(1).unwrap(), state)
-                                            % eval_sexp_to_num(l.get(2).unwrap(), state),
-                                    );
+                                    return Rc::new(Sexp::Num(
+                                        eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                            % eval_sexp_to_num(l.get(2).unwrap().clone(), state),
+                                    ));
                                 }
                                 "/" => {
-                                    return Sexp::Num(
-                                        eval_sexp_to_num(l.get(1).unwrap(), state)
-                                            / eval_sexp_to_num(l.get(2).unwrap(), state),
-                                    );
+                                    return Rc::new(Sexp::Num(
+                                        eval_sexp_to_num(l.get(1).unwrap().clone(), state)
+                                            / eval_sexp_to_num(l.get(2).unwrap().clone(), state),
+                                    ));
                                 }
                                 "progn" => {
                                     // Skip the actual "progn", then eval all and return last
                                     for (pos, statement) in l.iter().enumerate().skip(1) {
                                         if pos + 1 == l.len() {
-                                            return eval_sexp(statement, state);
+                                            return eval_sexp(statement.clone(), state);
                                         } else {
-                                            eval_sexp(statement, state);
+                                            eval_sexp(statement.clone(), state);
                                         }
                                     }
                                 }
-                                "setq" => match l.get(1).unwrap().clone() {
-                                    Sexp::Sym(s) => {
-                                        let eval_value = eval_sexp(l.get(2).unwrap(), state);
+                                "setq" => match *l.get(1).unwrap().clone() {
+                                    Sexp::Sym(ref s) => {
+                                        let eval_value = eval_sexp(l.get(2).unwrap().clone(), state);
 
                                         // Let's see if the symbol exists in local scope first
                                         for fn_map in state.fn_map.iter_mut().rev() {
-                                            if fn_map.get(&s).is_some() {
+                                            if fn_map.get(s).is_some() {
                                                 fn_map.insert(s.clone(), eval_value.clone());
 
                                                 return eval_value;
@@ -340,32 +366,32 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     }
                                 },
                                 "defmacro" => {
-                                    let macro_name = match l.get(1).unwrap() {
-                                        Sexp::Sym(s) => s,
+                                    let macro_name = match *l.get(1).unwrap().clone() {
+                                        Sexp::Sym(ref s) => s.clone(),
                                         _ => panic!("defmacro name should be a symbol"),
                                     };
 
-                                    let macro_body = l.clone().into_iter().skip(2).collect::<Vec<Sexp>>();
+                                    let macro_body: Vec<Rc<Sexp>> = l.clone().into_iter().skip(2).collect();
 
-                                    state.macro_map.insert(macro_name.clone(), Sexp::List(macro_body));
+                                    state.macro_map.insert(macro_name.clone(), Rc::new(Sexp::List(macro_body)));
 
-                                    return Sexp::Nil;
+                                    return Rc::new(Sexp::Nil);
                                 }
                                 "if" => {
                                     // eval the conditional statement:
-                                    match eval_sexp(l.get(1).unwrap(), state) {
+                                    match *eval_sexp(l.get(1).unwrap().clone(), state) {
                                         Sexp::Nil => match l.get(3) {
                                             // if false, eval the else statement
-                                            Some(sexp) => return eval_sexp(sexp, state),
+                                            Some(sexp) => return eval_sexp(sexp.clone(), state),
                                             None => {
-                                                return Sexp::Nil;
+                                                return Rc::new(Sexp::Nil);
                                             }
                                         },
                                         _ => {
                                             if let Some(else_statement) = l.get(2) {
-                                                return eval_sexp(else_statement, state);
+                                                return eval_sexp(else_statement.clone(), state);
                                             } else {
-                                                return Sexp::Nil;
+                                                return Rc::new(Sexp::Nil);
                                             }
                                         }
                                     }
@@ -377,34 +403,36 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                     let body = l.get(2).unwrap();
 
                                     loop {
-                                        match eval_sexp(test, state) {
+                                        match *eval_sexp(test.clone(), state) {
                                             Sexp::Nil => {
-                                                return Sexp::Nil;
+                                                return Rc::new(Sexp::Nil);
                                             }
                                             _ => {
-                                                eval_sexp(body, state);
+                                                eval_sexp(body.clone(), state);
                                             }
                                         }
                                     }
                                 }
                                 "or" => {
-                                    let first = eval_sexp(l.get(1).unwrap(), state);
+                                    let first = eval_sexp(l.get(1).unwrap().clone(), state);
 
                                     // if first evals to nil, return second
-                                    if let Sexp::Nil = first {
-                                        return eval_sexp(l.get(2).unwrap(), state);
+                                    if let Sexp::Nil = *first {
+                                        return eval_sexp(l.get(2).unwrap().clone(), state);
                                     } else {
                                         return first;
                                     }
                                 }
                                 "split-symbol" => {
-                                    let symbol = eval_sexp(l.get(1).unwrap(), state);
+                                    let symbol = eval_sexp(l.get(1).unwrap().clone(), state);
 
-                                    if let Sexp::Sym(s) = symbol {
+                                    if let Sexp::Sym(ref s) = *symbol {
                                         let delimiter = match l.get(2) {
                                             Some(d) => {
-                                                if let Sexp::Sym(s) = eval_sexp(d, state) {
-                                                    s
+                                                let d = d.clone();
+
+                                                if let Sexp::Sym(ref s) = *eval_sexp(d, state) {
+                                                    s.clone()
                                                 } else {
                                                     panic!("split-symbol expects a symbol as a delimiter");
                                                 }
@@ -412,17 +440,17 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                             None => "".to_string(),
                                         };
 
-                                        let mut ret: Vec<Sexp> = vec![];
+                                        let mut ret: Vec<Rc<Sexp>> = vec![];
 
                                         for split in s.split(delimiter.as_str()).filter(|c| !c.is_empty()) {
                                             if let Ok(n) = split.parse::<i64>() {
-                                                ret.push(Sexp::Num(n))
+                                                ret.push(Rc::new(Sexp::Num(n)))
                                             } else {
-                                                ret.push(Sexp::Sym(split.to_string()));
+                                                ret.push(Rc::new(Sexp::Sym(split.to_string())));
                                             }
                                         }
 
-                                        return Sexp::List(ret);
+                                        return Rc::new(Sexp::List(ret));
                                     } else {
                                         panic!("split-symbol expects a symbol, but found: {symbol}");
                                     }
@@ -430,11 +458,11 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                                 "concat-to-symbol" => {
                                     let mut ret = "".to_string();
 
-                                    if let Sexp::List(l) = eval_sexp(l.get(1).unwrap(), state) {
+                                    if let Sexp::List(ref l) = *eval_sexp(l.get(1).unwrap().clone(), state) {
                                         for sexp in l.iter() {
-                                            if let Sexp::Sym(s) = sexp {
+                                            if let Sexp::Sym(ref s) = **sexp {
                                                 ret.push_str(s);
-                                            } else if let Sexp::Num(n) = sexp {
+                                            } else if let Sexp::Num(ref n) = **sexp {
                                                 ret.push_str(n.to_string().as_str());
                                             } else {
                                                 panic!("concat-to-symbol expects a list of symbols or numbers");
@@ -444,25 +472,25 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
 
                                     if ret.is_empty() {
                                         // println!("ret is empty, returning nil");
-                                        return Sexp::Nil;
+                                        return Rc::new(Sexp::Nil);
                                     }
 
-                                    return Sexp::Sym(ret);
+                                    return Rc::new(Sexp::Sym(ret));
                                 }
                                 "integerp" => {
-                                    let sexp = eval_sexp(l.get(1).unwrap(), state);
+                                    let sexp = eval_sexp(l.get(1).unwrap().clone(), state);
 
-                                    match sexp {
-                                        Sexp::Num(_) => return Sexp::True,
-                                        _ => return Sexp::Nil,
+                                    match *sexp {
+                                        Sexp::Num(_) => return Rc::new(Sexp::True),
+                                        _ => return Rc::new(Sexp::Nil),
                                     }
                                 }
 
                                 "int-to-symbol" => {
-                                    let sexp = eval_sexp(l.get(1).unwrap(), state);
+                                    let sexp = eval_sexp(l.get(1).unwrap().clone(), state);
 
-                                    match sexp {
-                                        Sexp::Num(n) => return Sexp::Sym(n.to_string()),
+                                    match *sexp {
+                                        Sexp::Num(n) => return Rc::new(Sexp::Sym(n.to_string())),
                                         _ => return sexp,
                                     }
                                 }
@@ -471,18 +499,20 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
                             }
 
                             // check if we have a macro with this name
-                            if let Some(macros) = state.macro_map.clone().get(s) {
-                                match macros {
-                                    Sexp::List(macro_list) => {
-                                        let macro_params = match macro_list.first().unwrap() {
-                                            Sexp::List(l) => l,
+                            if let Some(macros) = state.macro_map.clone().get(s).cloned() {
+                                match *macros {
+                                    Sexp::List(ref macro_list) => {
+                                        let z = macro_list.first().unwrap();
+
+                                        let macro_params = match **z {
+                                            Sexp::List(ref l) => l,
                                             _ => panic!("macro params should be a list"),
                                         };
 
-                                        let mut current_function_param_map: HashMap<String, Sexp> = HashMap::new();
+                                        let mut current_function_param_map: HashMap<String, Rc<Sexp>> = HashMap::new();
                                         // Map variable names to values passed into the function
                                         for (index, var) in macro_params.iter().enumerate() {
-                                            if let Sexp::Sym(var_name) = var {
+                                            if let Sexp::Sym(ref var_name) = **var {
                                                 let value = l.get(index + 1).unwrap().clone();
 
                                                 current_function_param_map.insert(var_name.to_owned(), value);
@@ -493,7 +523,7 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
 
                                         state.fn_map.push(current_function_param_map);
 
-                                        let ret = eval_sexp(macro_list.get(1).unwrap(), state);
+                                        let ret = eval_sexp(macro_list.get(1).unwrap().clone(), state);
 
                                         state.fn_map.pop();
 
@@ -507,20 +537,23 @@ pub(crate) fn eval_sexp(sexp: &Sexp, state: &mut EvalState) -> Sexp {
 
                             // Not an intrinsic, or a macro.... could it be a variable?
                             match get_from_fn_map_or_global(s, state) {
-                                Some(var) => match var {
-                                    Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), state),
-                                    _ => var,
-                                },
+                                Some(var) => {
+                                    let t = var.clone();
+                                    match *t {
+                                        Sexp::List(ref ourfn) => execute_function(ourfn, l, state),
+                                        _ => var,
+                                    }
+                                }
                                 None => panic!("unrecognized symbol: {s}"),
                             }
                         }
                         Sexp::List(_) => {
                             // We are evaluating a list, whose first element is a list
                             // This must be a function call!
-                            let r = eval_sexp(first_elem_sexp, state);
+                            let r = eval_sexp(first_elem_sexp.clone(), state);
 
-                            match r {
-                                Sexp::List(ourfn) => execute_function(ourfn, l.as_slice(), state),
+                            match *r {
+                                Sexp::List(ref ourfn) => execute_function(ourfn, l, state),
                                 _ => r,
                             }
                         }
