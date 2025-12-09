@@ -43,6 +43,30 @@ fn eval_statements_sequentially(statements: &[Rc<Sexp>], state: &mut EvalState) 
     result
 }
 
+// Helper function to perform binary arithmetic operations
+fn eval_binary_arithmetic_op<F>(l: &[Rc<Sexp>], state: &mut EvalState, op: F) -> Rc<Sexp>
+where
+    F: Fn(i64, i64) -> i64,
+{
+    let left = eval_sexp_to_num(l[1].clone(), state);
+    let right = eval_sexp_to_num(l[2].clone(), state);
+    Rc::new(Sexp::Num(op(left, right)))
+}
+
+// Helper function to perform binary comparison operations
+fn eval_binary_comparison_op<F>(l: &[Rc<Sexp>], state: &mut EvalState, op: F) -> Rc<Sexp>
+where
+    F: Fn(i64, i64) -> bool,
+{
+    let left = eval_sexp_to_num(l[1].clone(), state);
+    let right = eval_sexp_to_num(l[2].clone(), state);
+    if op(left, right) {
+        Rc::new(Sexp::True)
+    } else {
+        Rc::new(Sexp::Nil)
+    }
+}
+
 fn get_from_fn_map_or_global(var_name: &str, state: &EvalState) -> Option<Rc<Sexp>> {
     // Check function scopes first for variable shadowing
     for var_map in state.fn_map.iter().rev() {
@@ -357,35 +381,13 @@ pub(crate) fn eval_sexp(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
                             }
                             result
                         }
-                        "-" => Rc::new(Sexp::Num(
-                            eval_sexp_to_num(l[1].clone(), state) - eval_sexp_to_num(l[2].clone(), state),
-                        )),
-                        "+" => Rc::new(Sexp::Num(
-                            eval_sexp_to_num(l[1].clone(), state) + eval_sexp_to_num(l[2].clone(), state),
-                        )),
-                        "*" => Rc::new(Sexp::Num(
-                            eval_sexp_to_num(l[1].clone(), state) * eval_sexp_to_num(l[2].clone(), state),
-                        )),
-                        "<" => {
-                            if eval_sexp_to_num(l[1].clone(), state) < eval_sexp_to_num(l[2].clone(), state) {
-                                Rc::new(Sexp::True)
-                            } else {
-                                Rc::new(Sexp::Nil)
-                            }
-                        }
-                        ">" => {
-                            if eval_sexp_to_num(l[1].clone(), state) > eval_sexp_to_num(l[2].clone(), state) {
-                                Rc::new(Sexp::True)
-                            } else {
-                                Rc::new(Sexp::Nil)
-                            }
-                        }
-                        "%" => Rc::new(Sexp::Num(
-                            eval_sexp_to_num(l[1].clone(), state) % eval_sexp_to_num(l[2].clone(), state),
-                        )),
-                        "/" => Rc::new(Sexp::Num(
-                            eval_sexp_to_num(l[1].clone(), state) / eval_sexp_to_num(l[2].clone(), state),
-                        )),
+                        "-" => eval_binary_arithmetic_op(l, state, |a, b| a - b),
+                        "+" => eval_binary_arithmetic_op(l, state, |a, b| a + b),
+                        "*" => eval_binary_arithmetic_op(l, state, |a, b| a * b),
+                        "<" => eval_binary_comparison_op(l, state, |a, b| a < b),
+                        ">" => eval_binary_comparison_op(l, state, |a, b| a > b),
+                        "%" => eval_binary_arithmetic_op(l, state, |a, b| a % b),
+                        "/" => eval_binary_arithmetic_op(l, state, |a, b| a / b),
                         "setq" => {
                             if let Sexp::Sym(ref s) = *l[1] {
                                 let eval_value = eval_sexp(l[2].clone(), state);
