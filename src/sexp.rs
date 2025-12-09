@@ -137,6 +137,32 @@ impl std::fmt::Display for Sexp {
     }
 }
 
+// Helper function to wrap tokens with special characters (quote/backtick/comma)
+fn wrap_tokens_with_special_chars(
+    expanded_tokens: &mut Vec<lex::Token>,
+    apostrophe_or_backtick_vec: &[lex::Token],
+) {
+    for i in apostrophe_or_backtick_vec.iter() {
+        match i {
+            lex::Token::Apostrophe => {
+                expanded_tokens.push(lex::Token::LeftParen);
+                expanded_tokens.push(lex::Token::String("quote".to_string()));
+            }
+            lex::Token::Backtick => {
+                expanded_tokens.push(lex::Token::LeftParen);
+                expanded_tokens.push(lex::Token::String("backtick".to_string()));
+            }
+            lex::Token::Comma => {
+                expanded_tokens.push(lex::Token::LeftParen);
+                expanded_tokens.push(lex::Token::String("comma".to_string()));
+            }
+            _ => {
+                panic!("invalid syntax")
+            }
+        }
+    }
+}
+
 // This expands backticks into the quotation syntax
 fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
     let mut expanded_tokens: Vec<lex::Token> = vec![];
@@ -179,25 +205,7 @@ fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
 
                             let slice = &tokens[index + 1..index + skip + 2].to_vec().clone();
 
-                            for i in apostrophe_or_backtick_vec.iter() {
-                                match i {
-                                    lex::Token::Apostrophe => {
-                                        expanded_tokens.push(lex::Token::LeftParen);
-                                        expanded_tokens.push(lex::Token::String("quote".to_string()));
-                                    }
-                                    lex::Token::Backtick => {
-                                        expanded_tokens.push(lex::Token::LeftParen);
-                                        expanded_tokens.push(lex::Token::String("backtick".to_string()));
-                                    }
-                                    lex::Token::Comma => {
-                                        expanded_tokens.push(lex::Token::LeftParen);
-                                        expanded_tokens.push(lex::Token::String("comma".to_string()));
-                                    }
-                                    _ => {
-                                        panic!("invalid syntax")
-                                    }
-                                }
-                            }
+                            wrap_tokens_with_special_chars(&mut expanded_tokens, &apostrophe_or_backtick_vec);
 
                             let mut expanded = expand_special_characters(slice);
 
@@ -218,25 +226,7 @@ fn expand_special_characters(tokens: &[lex::Token]) -> Vec<lex::Token> {
                 }
                 // If it's a symbol or a digit, then we need to wrap it in a quote
                 lex::Token::String(_) | lex::Token::Digit(_) => {
-                    for i in apostrophe_or_backtick_vec.iter() {
-                        match i {
-                            lex::Token::Apostrophe => {
-                                expanded_tokens.push(lex::Token::LeftParen);
-                                expanded_tokens.push(lex::Token::String("quote".to_string()));
-                            }
-                            lex::Token::Backtick => {
-                                expanded_tokens.push(lex::Token::LeftParen);
-                                expanded_tokens.push(lex::Token::String("backtick".to_string()));
-                            }
-                            lex::Token::Comma => {
-                                expanded_tokens.push(lex::Token::LeftParen);
-                                expanded_tokens.push(lex::Token::String("comma".to_string()));
-                            }
-                            _ => {
-                                panic!("invalid syntax")
-                            }
-                        }
-                    }
+                    wrap_tokens_with_special_chars(&mut expanded_tokens, &apostrophe_or_backtick_vec);
 
                     expanded_tokens.push(next_token.clone());
 
