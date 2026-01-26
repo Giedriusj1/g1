@@ -1,18 +1,25 @@
 use crate::sexp::{IntrinsicInstruction, Sexp};
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::rc::Rc;
+
+// Use Vec for function scopes - faster than HashMap for small maps (<10 items)
+type SmallMap = Vec<(String, Rc<Sexp>)>;
 
 #[derive(Clone)]
 pub(crate) struct EvalState {
-    macro_map: BTreeMap<String, Rc<Sexp>>,
-    global_map: BTreeMap<String, Rc<Sexp>>,
-    fn_map: Vec<BTreeMap<String, Rc<Sexp>>>,
+    macro_map: HashMap<String, Rc<Sexp>>,
+    global_map: HashMap<String, Rc<Sexp>>,
+    fn_map: Vec<SmallMap>,
 }
 
 impl EvalState {
     pub(crate) fn new() -> EvalState {
-        EvalState { macro_map: BTreeMap::new(), global_map: BTreeMap::new(), fn_map: vec![] }
+        EvalState {
+            macro_map: HashMap::with_capacity(64),
+            global_map: HashMap::with_capacity(128),
+            fn_map: Vec::with_capacity(32),
+        }
     }
 }
 
@@ -25,10 +32,12 @@ fn eval_sexp_to_num(sexp: Rc<Sexp>, state: &mut EvalState) -> i64 {
 }
 
 fn get_from_fn_map_or_global(var_name: &str, state: &EvalState) -> Option<Rc<Sexp>> {
-    // Check function scopes first for variable shadowing
+    // Check function scopes first (linear search, fast for small scopes)
     for var_map in state.fn_map.iter().rev() {
-        if let Some(sexp) = var_map.get(var_name) {
-            return Some(Rc::clone(sexp));
+        for (name, sexp) in var_map {
+            if name == var_name {
+                return Some(Rc::clone(sexp));
+            }
         }
     }
 
@@ -71,7 +80,7 @@ fn execute_function(fnbody: &[Rc<Sexp>], fncall: &[Rc<Sexp>], state: &mut EvalSt
         _ => panic!("function params should be a list"),
     };
 
-    let mut fn_param_map = BTreeMap::new();
+    let mut fn_param_map = Vec::with_capacity(fnparams.len());
 
     // Map params to evaluated args
     for (index, var) in fnparams.iter().enumerate() {
@@ -80,11 +89,11 @@ fn execute_function(fnbody: &[Rc<Sexp>], fncall: &[Rc<Sexp>], state: &mut EvalSt
             _ => panic!("function param name should be a symbol"),
         };
 
-        fn_param_map.insert(name.to_owned(), eval_sexp(fncall[index + 1].clone(), state));
+        fn_param_map.push((name.clone(), eval_sexp(Rc::clone(&fncall[index + 1]), state)));
     }
 
     state.fn_map.push(fn_param_map);
-    let ret = eval_sexp(fnbody[1].clone(), state);
+    let ret = eval_sexp(Rc::clone(&fnbody[1]), state);
     state.fn_map.pop();
     ret
 }
@@ -112,13 +121,13 @@ pub(crate) fn eval_sexp(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
 
                     match **let_param_list {
                         Sexp::List(ref params) => {
-                            let mut current_function_param_map = BTreeMap::new();
+                            let mut current_function_param_map = Vec::with_capacity(params.len());
 
                             for var in params {
                                 if let Sexp::List(ref binding) = **var {
                                     if let Sexp::Sym(ref let_var_name) = *binding[0] {
-                                        let var_eval = eval_sexp(binding[1].clone(), state);
-                                        current_function_param_map.insert(let_var_name.to_owned(), var_eval);
+                                        let var_eval = eval_sexp(Rc::clone(&binding[1]), state);
+                                        current_function_param_map.push((let_var_name.clone(), var_eval));
                                     } else {
                                         panic!("let is missing variable name");
                                     }
@@ -392,13 +401,15 @@ pub(crate) fn eval_sexp(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
                         )),
                         "setq" => {
                             if let Sexp::Sym(ref s) = *l[1] {
-                                let eval_value = eval_sexp(l[2].clone(), state);
+                                let eval_value = eval_sexp(Rc::clone(&l[2]), state);
 
-                                // Let's see if the symbol exists in local scope first
+                                // Check local scopes first
                                 for fn_map in state.fn_map.iter_mut().rev() {
-                                    if fn_map.get(s).is_some() {
-                                        fn_map.insert(s.clone(), Rc::clone(&eval_value));
-                                        return eval_value;
+                                    for (name, val) in fn_map.iter_mut() {
+                                        if name == s {
+                                            *val = Rc::clone(&eval_value);
+                                            return eval_value;
+                                        }
                                     }
                                 }
 
@@ -443,20 +454,20 @@ pub(crate) fn eval_sexp(sexp: Rc<Sexp>, state: &mut EvalState) -> Rc<Sexp> {
                             if let Some(macros) = state.macro_map.get(s).cloned() {
                                 if let Sexp::List(ref macro_list) = *macros {
                                     if let Sexp::List(ref macro_params) = *macro_list[0] {
-                                        let mut current_function_param_map = BTreeMap::new();
+                                        let mut current_function_param_map = Vec::with_capacity(macro_params.len());
 
                                         // Map variable names to values passed into the function
                                         for (index, var) in macro_params.iter().enumerate() {
                                             if let Sexp::Sym(ref var_name) = **var {
-                                                let value = l[index + 1].clone();
-                                                current_function_param_map.insert(var_name.to_owned(), value);
+                                                let value = Rc::clone(&l[index + 1]);
+                                                current_function_param_map.push((var_name.clone(), value));
                                             } else {
                                                 panic!("macro param name should be a symbol")
                                             };
                                         }
 
                                         state.fn_map.push(current_function_param_map);
-                                        let ret = eval_sexp(macro_list[1].clone(), state);
+                                        let ret = eval_sexp(Rc::clone(&macro_list[1]), state);
                                         state.fn_map.pop();
                                         return ret;
                                     } else {

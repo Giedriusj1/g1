@@ -85,26 +85,14 @@ fn extract_alphanumeric_symbol(mut chars: std::str::Chars) -> Option<(Token, usi
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub(crate) fn extract_token(chars: std::str::Chars) -> Option<(Token, usize)> {
-    let match_functions: Vec<fn(chars: std::str::Chars) -> Option<(Token, usize)>> = vec![
-        move |x| extract_single_char(x, '(', Token::LeftParen),
-        move |x| extract_single_char(x, ')', Token::RightParen),
-        move |x| extract_single_char(x, '\'', Token::Apostrophe),
-        move |x| extract_single_char(x, '`', Token::Backtick),
-        move |x| extract_single_char(x, ',', Token::Comma),
-        extract_alphanumeric_symbol,
-    ];
-
-    for match_fn in match_functions {
-        let ret = match_fn(chars.clone());
-        match ret {
-            Some(_) => return ret,
-            None => continue,
-        }
-    }
-
-    None
+    // Inline checks to avoid Vec allocation on every call
+    if let Some(r) = extract_single_char(chars.clone(), '(', Token::LeftParen) { return Some(r); }
+    if let Some(r) = extract_single_char(chars.clone(), ')', Token::RightParen) { return Some(r); }
+    if let Some(r) = extract_single_char(chars.clone(), '\'', Token::Apostrophe) { return Some(r); }
+    if let Some(r) = extract_single_char(chars.clone(), '`', Token::Backtick) { return Some(r); }
+    if let Some(r) = extract_single_char(chars.clone(), ',', Token::Comma) { return Some(r); }
+    extract_alphanumeric_symbol(chars)
 }
 
 pub(crate) fn extract_tokens(stra: String) -> Vec<Token> {
